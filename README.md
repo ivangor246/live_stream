@@ -1,75 +1,114 @@
-# React + TypeScript + Vite
+# Live Stream Monitor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Небольшое fullstack-приложение для создания и мониторинга live-трансляций. Видео заменено заглушкой: основная цель проекта — практика REST, WebSocket и общих TypeScript-контрактов.
 
-Currently, two official plugins are available:
+## Возможности
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- создание, запуск и завершение трансляций;
+- просмотр списка и отдельной страницы трансляции;
+- real-time-подсчёт подключённых зрителей;
+- реакции `like`, `fire` и `clap` с рассылкой всем зрителям;
+- синхронизация статуса через WebSocket;
+- runtime-валидация HTTP- и WebSocket-данных;
+- централизованные API-ошибки и graceful shutdown backend.
 
-## React Compiler
+## Стек
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Frontend
 
-## Expanding the ESLint configuration
+- React 19;
+- TypeScript;
+- Vite;
+- React Router;
+- WebSocket API;
+- CSS.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Backend
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js;
+- TypeScript;
+- Express;
+- `ws`;
+- Zod;
+- in-memory-хранилище.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Структура
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```text
+client/   React-приложение
+server/   REST API и WebSocket-сервер
+shared/   общие TypeScript-контракты
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Backend разделён на слои:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```text
+HTTP -> routes -> controllers -> service -> repository
+WebSocket -> message handler -> service -> repository
 ```
+
+## Запуск
+
+Установите зависимости backend:
+
+```bash
+cd server
+npm install
+```
+
+Запустите backend:
+
+```bash
+npm run dev
+```
+
+Во втором терминале установите зависимости frontend:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Откройте `http://localhost:5173`.
+
+## Проверки
+
+```bash
+cd client
+npm run build
+npm run lint
+```
+
+```bash
+cd server
+npm run typecheck
+```
+
+## API
+
+```text
+GET  /api/health
+GET  /api/streams
+GET  /api/streams/:streamId
+POST /api/streams
+POST /api/streams/:streamId/start
+POST /api/streams/:streamId/finish
+WS   /ws
+```
+
+## Ограничения
+
+- данные хранятся в памяти и исчезают после перезапуска backend;
+- нет авторизации ведущего;
+- нет настоящей передачи видео;
+- WebSocket-клиент пока не выполняет автоматическое переподключение;
+- хранение и broadcast не распределены между несколькими backend-процессами.
+
+## Возможные улучшения
+
+- heartbeat `ping/pong`;
+- rate limiting для реакций;
+- PostgreSQL для трансляций;
+- Redis для зрителей и Pub/Sub;
+- авторизация и разделение ролей.
