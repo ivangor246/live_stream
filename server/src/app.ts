@@ -1,11 +1,23 @@
 import cors from "cors";
-import express from "express";
+import express, { type Express } from "express";
 
-export const app = express();
+import type { StreamsController } from "./controllers/streamsController.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { createStreamsRouter } from "./routes/streamsRoutes.js";
 
-app.use(cors());
-app.use(express.json());
+export function createApp(streamsController: StreamsController): Express {
+  const app = express();
 
-app.get("/api/health", (_request, response) => {
-  response.json({ status: "ok" });
-});
+  app.use(cors());
+  app.use(express.json());
+
+  app.get("/api/health", (_request, response) => {
+    response.json({ status: "ok" });
+  });
+
+  app.use("/api/streams", createStreamsRouter(streamsController));
+
+  app.use(errorHandler);
+
+  return app;
+}
