@@ -32,7 +32,7 @@ function getErrorMessage(error: unknown): string {
   return "Не удалось создать трансляцию.";
 }
 
-export function CreateSreamForm({ onCreate }: CreateStreamFormProps) {
+export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
   const [formState, setFormState] = useState<CreateStreamFormState>({
     title: "",
     isSubmitting: false,
