@@ -1,49 +1,16 @@
-import { useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-type BackendStatus = "checking" | "online" | "offline";
+import { StreamPage } from "./pages/StreamPage.js";
+import { StreamsPage } from "./pages/StreamsPage.js";
 
-function App() {
-  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
-
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    async function checkBackend(): Promise<void> {
-      try {
-        const response = await fetch("/api/health", {
-          signal: abortController.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-
-        setBackendStatus("online");
-      } catch (error: unknown) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
-
-        setBackendStatus("offline");
-      }
-    }
-
-    void checkBackend();
-
-    return () => {
-      abortController.abort();
-    };
-  }, []);
-
+export default function App() {
   return (
-    <main>
-      <h1>Live Stream Monitor</h1>
+    <Routes>
+      <Route path="/" element={<StreamsPage />} />
 
-      {backendStatus === "checking" && <p>Проверяем backend...</p>}
-      {backendStatus === "online" && <p>Backend доступен ✅</p>}
-      {backendStatus === "offline" && <p>Backend недоступен ❌</p>}
-    </main>
+      <Route path="/streams/:streamId" element={<StreamPage />} />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
-
-export default App;
