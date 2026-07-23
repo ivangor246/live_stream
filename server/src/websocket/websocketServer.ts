@@ -38,6 +38,18 @@ export function createWebSocketServer(
     }
   };
 
+  const unsubscribeFromStatusUpdates = streamsService.subscribeToStatusUpdates(
+    (stream) => {
+      broadcastToStream(stream.id, {
+        type: "stream:status-updated",
+        payload: {
+          streamId: stream.id,
+          status: stream.status,
+        },
+      });
+    },
+  );
+
   webSocketServer.on("connection", (socket) => {
     const connectionContext: ConnectionContext = {
       viewerId: null,
@@ -88,6 +100,10 @@ export function createWebSocketServer(
         },
       });
     });
+  });
+
+  webSocketServer.on("close", () => {
+    unsubscribeFromStatusUpdates();
   });
 
   return webSocketServer;

@@ -3,10 +3,27 @@ import { AppError } from "../errors/AppError.js";
 import type { StreamsRepository } from "../repositories/streamsRepository.js";
 import type { ReactionType } from "../../../shared/websocket.js";
 
+type StatusUpdateListener = (stream: Stream) => void;
+
 export class StreamsService {
+  private readonly statusUpdateListeners = new Set<StatusUpdateListener>();
   private readonly streamViewers = new Map<string, Set<string>>();
 
   constructor(private readonly streamsRepository: StreamsRepository) {}
+
+  subscribeToStatusUpdates(listener: StatusUpdateListener): () => void {
+    this.statusUpdateListeners.add(listener);
+
+    return () => {
+      this.statusUpdateListeners.delete(listener);
+    };
+  }
+
+  private notifyStatusUpdated(stream: Stream): void {
+    for (const listener of this.statusUpdateListeners) {
+      listener(stream);
+    }
+  }
 
   getStreams(): Stream[] {
     return this.streamsRepository.findAll();
@@ -47,7 +64,11 @@ export class StreamsService {
       startedAt: new Date().toISOString(),
     };
 
-    return this.streamsRepository.update(updatedStream);
+    const savedStream = this.streamsRepository.update(updatedStream);
+
+    this.notifyStatusUpdated(savedStream);
+
+    return savedStream;
   }
 
   finishStream(streamId: string): Stream {
@@ -75,7 +96,11 @@ export class StreamsService {
       finishedAt: new Date().toISOString(),
     };
 
-    return this.streamsRepository.update(updatedStream);
+    const savedStream = this.streamsRepository.update(updatedStream);
+
+    this.notifyStatusUpdated(savedStream);
+
+    return savedStream;
   }
 
   addViewer(streamId: string, viewerId: string): Stream {
