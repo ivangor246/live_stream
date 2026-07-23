@@ -15,7 +15,7 @@ const streamsController = new StreamsController(streamsService);
 const app = createApp(streamsController);
 const httpServer = createServer(app);
 
-createWebSocketServer(httpServer);
+createWebSocketServer(httpServer, streamsService);
 
 httpServer.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);

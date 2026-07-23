@@ -1,7 +1,7 @@
 import type { Stream } from "../../../shared/stream.js";
 import { AppError } from "../errors/AppError.js";
 import type { StreamsRepository } from "../repositories/streamsRepository.js";
-import { ReactionType } from "../../../shared/websocket.js";
+import type { ReactionType } from "../../../shared/websocket.js";
 
 export class StreamsService {
   private readonly streamViewers = new Map<string, Set<string>>();
@@ -132,6 +132,39 @@ export class StreamsService {
     const updatedStream: Stream = {
       ...stream,
       viewerCount: viewers.size,
+    };
+
+    return this.streamsRepository.update(updatedStream);
+  }
+
+  addReaction(
+    streamId: string,
+    viewerId: string,
+    _reaction: ReactionType,
+  ): Stream {
+    const stream = this.getStream(streamId);
+
+    if (stream.status !== "live") {
+      throw new AppError(
+        409,
+        "STREAM_NOT_LIVE",
+        "Reactions are only accepted for live streams",
+      );
+    }
+
+    const viewers = this.streamViewers.get(streamId);
+
+    if (!viewers?.has(viewerId)) {
+      throw new AppError(
+        403,
+        "VIEWER_NOT_CONNECTED",
+        "Viewer is not connected to this stream",
+      );
+    }
+
+    const updatedStream: Stream = {
+      ...stream,
+      reactionCount: stream.reactionCount + 1,
     };
 
     return this.streamsRepository.update(updatedStream);

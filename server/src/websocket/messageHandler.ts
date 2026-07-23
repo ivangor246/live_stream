@@ -1,10 +1,23 @@
 import WebSocket, { type RawData } from "ws";
 import z from "zod";
 
+import { AppError } from "../errors/AppError.js";
+import type { StreamsService } from "../services/streamsService.js";
+
 import type {
   ClientWebSocketMessage,
   ServerWebSocketMessage,
 } from "../../../shared/websocket.js";
+
+export interface ConnectionContext {
+  viewerId: string | null;
+  streamId: string | null;
+}
+
+export type BroadcastToStream = (
+  streamId: string,
+  message: ServerWebSocketMessage,
+) => void;
 
 const reactionTypeSchema = z.enum(["like", "fire", "clap"]);
 
@@ -52,7 +65,82 @@ function sendError(socket: WebSocket, code: string, message: string): void {
   });
 }
 
-export function handleWebSocketMessage(socket: WebSocket, data: RawData): void {
+function handleViewerJoin(
+  message: Extract<ClientWebSocketMessage, { type: "viewer:join" }>,
+  connectionContext: ConnectionContext,
+  streamsService: StreamsService,
+  broadcastToStream: BroadcastToStream,
+): void {
+  const { streamId, viewerId } = message.payload;
+
+  const connectionAlreadyJoined =
+    connectionContext.streamId !== null || connectionContext.viewerId !== null;
+
+  const joinedSameViewer =
+    connectionContext.streamId === streamId &&
+    connectionContext.viewerId === viewerId;
+
+  if (connectionAlreadyJoined && !joinedSameViewer) {
+    throw new AppError(
+      409,
+      "CONNECTION_ALREADY_JOINED",
+      "Connection has already joined another stream",
+    );
+  }
+
+  const stream = streamsService.addViewer(streamId, viewerId);
+
+  connectionContext.streamId = streamId;
+  connectionContext.viewerId = viewerId;
+
+  broadcastToStream(streamId, {
+    type: "stream:viewers-updated",
+    payload: {
+      streamId,
+      viewerCount: stream.viewerCount,
+    },
+  });
+}
+
+function handleReaction(
+  message: Extract<ClientWebSocketMessage, { type: "reaction:send" }>,
+  connectionContext: ConnectionContext,
+  streamsService: StreamsService,
+  broadcastToStream: BroadcastToStream,
+): void {
+  const { streamId, viewerId, reaction } = message.payload;
+
+  const matchesConnection =
+    connectionContext.streamId === streamId &&
+    connectionContext.viewerId === viewerId;
+
+  if (!matchesConnection) {
+    throw new AppError(
+      403,
+      "CONNECTION_CONTEXT_MISMATCH",
+      "Reaction does not match the connected viewer",
+    );
+  }
+
+  const stream = streamsService.addReaction(streamId, viewerId, reaction);
+
+  broadcastToStream(streamId, {
+    type: "stream:reaction-received",
+    payload: {
+      streamId,
+      reaction,
+      reactionCount: stream.reactionCount,
+    },
+  });
+}
+
+export function handleWebSocketMessage(
+  socket: WebSocket,
+  data: RawData,
+  connectionContext: ConnectionContext,
+  streamsService: StreamsService,
+  broadcastToStream: BroadcastToStream,
+): void {
   let parsedMessage: unknown;
 
   try {
@@ -72,17 +160,34 @@ export function handleWebSocketMessage(socket: WebSocket, data: RawData): void {
 
   const message: ClientWebSocketMessage = parseResult.data;
 
-  switch (message.type) {
-    case "viewer:join":
-      console.log(
-        `Viewer ${message.payload.viewerId} requested stream ${message.payload.streamId}`,
-      );
-      break;
+  try {
+    switch (message.type) {
+      case "viewer:join":
+        handleViewerJoin(
+          message,
+          connectionContext,
+          streamsService,
+          broadcastToStream,
+        );
+        break;
 
-    case "reaction:send":
-      console.log(
-        `Viewer ${message.payload.viewerId} sent ${message.payload.reaction}`,
-      );
-      break;
+      case "reaction:send":
+        handleReaction(
+          message,
+          connectionContext,
+          streamsService,
+          broadcastToStream,
+        );
+        break;
+    }
+  } catch (error: unknown) {
+    if (error instanceof AppError) {
+      sendError(socket, error.code, error.message);
+      return;
+    }
+
+    console.error("Unexpected WebSocket error:", error);
+
+    sendError(socket, "INTERNAL_SERVER_ERROR", "An unexpected error occurred");
   }
 }
