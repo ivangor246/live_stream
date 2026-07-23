@@ -1,6 +1,8 @@
 import type { Server } from "node:http";
 import { WebSocketServer } from "ws";
 
+import { handleWebSocketMessage } from "./messageHandler.js";
+
 export function createWebSocketServer(httpServer: Server): WebSocketServer {
   const webSocketServer = new WebSocketServer({
     server: httpServer,
@@ -9,6 +11,10 @@ export function createWebSocketServer(httpServer: Server): WebSocketServer {
 
   webSocketServer.on("connection", (socket) => {
     console.log("Websocket client connected");
+
+    socket.on("message", (data) => {
+      handleWebSocketMessage(socket, data);
+    });
 
     socket.on("close", () => {
       console.log("Websocket client disconnected");

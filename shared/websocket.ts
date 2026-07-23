@@ -7,8 +7,7 @@ export type ClientWebSocketMessage =
       type: "viewer:join";
       payload: {
         streamId: string;
-        viewer: string;
-        reaction: ReactionType;
+        viewerId: string;
       };
     }
   | {
