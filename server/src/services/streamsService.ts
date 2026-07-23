@@ -23,7 +23,7 @@ export class StreamsService {
     return this.streamsRepository.create(title);
   }
 
-  startsStream(streamId: string): Stream {
+  startStream(streamId: string): Stream {
     const stream = this.getStream(streamId);
 
     if (stream.status === "live") {
