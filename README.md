@@ -1,18 +1,28 @@
 # Live Stream Monitor
 
-Небольшое fullstack-приложение для создания и мониторинга live-трансляций. Видео заменено заглушкой: основная цель проекта — практика REST, WebSocket и общих TypeScript-контрактов.
+Fullstack-приложение для создания и мониторинга live-трансляций. Frontend и backend написаны на TypeScript и используют общие типы для HTTP- и WebSocket-сообщений.
 
-## Возможности
+Передача видео не реализована: на странице трансляции отображается заглушка плеера.
 
-- создание, запуск и завершение трансляций;
-- просмотр списка и отдельной страницы трансляции;
-- real-time-подсчёт подключённых зрителей;
-- реакции `like`, `fire` и `clap` с рассылкой всем зрителям;
-- синхронизация статуса через WebSocket;
-- runtime-валидация HTTP- и WebSocket-данных;
-- централизованные API-ошибки и graceful shutdown backend.
+## Текущее состояние
 
-## Стек
+В приложении реализованы:
+
+- создание трансляции со статусом `scheduled`;
+- запуск трансляции с переходом `scheduled -> live`;
+- завершение трансляции с переходом `live -> finished`;
+- получение списка и отдельной трансляции через REST API;
+- учёт подключённых зрителей через WebSocket;
+- обновление счётчика зрителей при подключении и отключении;
+- реакции `like`, `fire` и `clap`;
+- рассылка изменений всем WebSocket-клиентам конкретной трансляции;
+- блокировка новых зрителей и реакций после завершения трансляции;
+- валидация HTTP- и WebSocket-данных;
+- централизованные API-ошибки;
+- graceful shutdown HTTP- и WebSocket-сервера;
+- адаптивный frontend-интерфейс.
+
+## Технологии
 
 ### Frontend
 
@@ -32,47 +42,105 @@
 - Zod;
 - in-memory-хранилище.
 
-## Структура
+## Структура проекта
 
 ```text
-client/   React-приложение
-server/   REST API и WebSocket-сервер
-shared/   общие TypeScript-контракты
+client/
+  src/
+    api/          типизированный HTTP-клиент
+    components/   UI-компоненты
+    hooks/        WebSocket-хук
+    pages/        страницы React Router
+    types/        клиентские типы
+
+server/
+  src/
+    controllers/  HTTP-контроллеры
+    errors/       ошибки приложения
+    middleware/   Express middleware
+    repositories/ in-memory-хранилище
+    routes/        REST-маршруты
+    services/      бизнес-логика
+    websocket/     WebSocket-сервер и обработка сообщений
+
+shared/            общие TypeScript-контракты
 ```
 
-Backend разделён на слои:
+Поток HTTP-запроса:
 
 ```text
-HTTP -> routes -> controllers -> service -> repository
-WebSocket -> message handler -> service -> repository
+route -> controller -> service -> repository
 ```
 
-## Запуск
+WebSocket-обработчик использует тот же экземпляр service, что и HTTP-контроллеры.
 
-Установите зависимости backend:
+## Требования для запуска
+
+- Node.js 22 или новее;
+- npm.
+
+## Установка
+
+Зависимости frontend и backend устанавливаются отдельно.
 
 ```bash
 cd server
 npm install
 ```
 
-Запустите backend:
-
-```bash
-npm run dev
-```
-
-Во втором терминале установите зависимости frontend:
-
 ```bash
 cd client
 npm install
+```
+
+## Запуск в режиме разработки
+
+Запустите backend в первом терминале:
+
+```bash
+cd server
 npm run dev
 ```
 
-Откройте `http://localhost:5173`.
+По умолчанию backend доступен по адресу `http://localhost:3000`.
 
-## Проверки
+Запустите frontend во втором терминале:
+
+```bash
+cd client
+npm run dev
+```
+
+Frontend будет доступен по адресу `http://localhost:5173`.
+
+Vite перенаправляет HTTP-запросы `/api` и WebSocket-соединения `/ws` на backend.
+
+## Сборка frontend
+
+```bash
+cd client
+npm run build
+```
+
+Результат сборки создаётся в `client/dist`.
+
+Локальный просмотр сборки:
+
+```bash
+cd client
+npm run preview
+```
+
+Backend запускается без watch-режима командой:
+
+```bash
+cd server
+npm start
+```
+
+## Проверка кода
+
+Frontend:
 
 ```bash
 cd client
@@ -80,35 +148,56 @@ npm run build
 npm run lint
 ```
 
+Backend:
+
 ```bash
 cd server
 npm run typecheck
 ```
 
-## API
+## HTTP API
+
+| Метод | URL | Назначение |
+| --- | --- | --- |
+| `GET` | `/api/health` | Проверка доступности backend |
+| `GET` | `/api/streams` | Получить список трансляций |
+| `GET` | `/api/streams/:streamId` | Получить трансляцию |
+| `POST` | `/api/streams` | Создать трансляцию |
+| `POST` | `/api/streams/:streamId/start` | Запустить трансляцию |
+| `POST` | `/api/streams/:streamId/finish` | Завершить трансляцию |
+
+## WebSocket
+
+Точка подключения:
 
 ```text
-GET  /api/health
-GET  /api/streams
-GET  /api/streams/:streamId
-POST /api/streams
-POST /api/streams/:streamId/start
-POST /api/streams/:streamId/finish
-WS   /ws
+ws://localhost:3000/ws
 ```
 
-## Ограничения
+Сообщения от клиента:
 
-- данные хранятся в памяти и исчезают после перезапуска backend;
-- нет авторизации ведущего;
-- нет настоящей передачи видео;
-- WebSocket-клиент пока не выполняет автоматическое переподключение;
-- хранение и broadcast не распределены между несколькими backend-процессами.
+```text
+viewer:join
+reaction:send
+```
 
-## Возможные улучшения
+Сообщения от сервера:
 
-- heartbeat `ping/pong`;
-- rate limiting для реакций;
-- PostgreSQL для трансляций;
-- Redis для зрителей и Pub/Sub;
-- авторизация и разделение ролей.
+```text
+stream:viewers-updated
+stream:reaction-received
+stream:status-updated
+error
+```
+
+## Хранение данных
+
+Трансляции и зрители хранятся в памяти backend-процесса. После его перезапуска данные очищаются.
+
+## Ограничения текущей версии
+
+- нет авторизации и разделения ролей;
+- нет постоянного хранилища;
+- нет передачи видео;
+- WebSocket-клиент не переподключается автоматически;
+- состояние WebSocket не синхронизируется между несколькими backend-процессами.
