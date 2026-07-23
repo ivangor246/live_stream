@@ -18,7 +18,7 @@ export function ConnectionStatus({
   status,
 }: ConnectionStatusProps) {
   return (
-    <p>
+    <p className={`connection-status connection-status--${status}`}>
       WebSocket:{" "}
       <strong>{connectionStatusLabels[status]}</strong>
     </p>

@@ -14,8 +14,9 @@ export function StreamPlayer({
   status,
 }: StreamPlayerProps) {
   return (
-    <section aria-label="Видеоплеер">
+    <section className="stream-player" aria-label="Видеоплеер">
       <div
+        className="stream-player__screen"
         role="img"
         aria-label="Заглушка видеоплеера"
       >

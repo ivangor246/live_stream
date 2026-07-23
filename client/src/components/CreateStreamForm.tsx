@@ -81,10 +81,10 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="create-form" onSubmit={handleSubmit}>
       <h2>Создать трансляцию</h2>
 
-      <label htmlFor="steam-title">Название</label>
+      <label htmlFor="stream-title">Название</label>
 
       <input
         id="stream-title"
@@ -104,7 +104,11 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
 
       {formState.error && <p role="alert">{formState.error}</p>}
 
-      <button type="submit" disabled={formState.isSubmitting}>
+      <button
+        className="button button--primary"
+        type="submit"
+        disabled={formState.isSubmitting}
+      >
         {formState.isSubmitting ? "Создание..." : "Создать"}
       </button>
     </form>

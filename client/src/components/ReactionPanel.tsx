@@ -46,12 +46,13 @@ export function ReactionPanel({
   onReaction,
 }: ReactionPanelProps) {
   return (
-    <section aria-labelledby="reactions-heading">
+    <section className="reaction-panel" aria-labelledby="reactions-heading">
       <h2 id="reactions-heading">Реакции</h2>
 
-      <div>
+      <div className="reaction-panel__actions">
         {reactionOptions.map((option) => (
           <button
+            className="button button--reaction"
             key={option.type}
             type="button"
             disabled={disabled}

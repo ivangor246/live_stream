@@ -8,7 +8,7 @@ export function StreamStatistics({
   reactionCount,
 }: StreamStatisticsProps) {
   return (
-    <dl>
+    <dl className="stream-statistics">
       <div>
         <dt>Зрители</dt>
         <dd>{viewerCount}</dd>

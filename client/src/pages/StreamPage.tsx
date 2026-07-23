@@ -73,10 +73,12 @@ function StreamContent({
     streamStatus !== "live";
 
   return (
-    <main>
-      <Link to="/">← К списку трансляций</Link>
+    <main className="page-shell stream-page">
+      <Link className="back-link" to="/">
+        ← К списку трансляций
+      </Link>
 
-      <header>
+      <header className="page-header stream-page__header">
         <h1>{stream.title}</h1>
         <p>
           Статус: <strong>{statusLabels[streamStatus]}</strong>
@@ -100,6 +102,7 @@ function StreamContent({
 
       {streamStatus === "live" && (
         <button
+          className="button button--danger"
           type="button"
           disabled={isFinishing}
           onClick={onFinish}
@@ -203,7 +206,7 @@ export function StreamPage() {
 
   if (!streamId) {
     return (
-      <main>
+      <main className="page-shell page-message">
         <h1>Неверный адрес трансляции</h1>
         <Link to="/">Вернуться к списку</Link>
       </main>
@@ -212,7 +215,7 @@ export function StreamPage() {
 
   if (isLoading) {
     return (
-      <main>
+      <main className="page-shell page-message">
         <p>Загрузка трансляции...</p>
       </main>
     );
@@ -220,7 +223,7 @@ export function StreamPage() {
 
   if (loadError || !stream) {
     return (
-      <main>
+      <main className="page-shell page-message">
         <h1>Не удалось открыть трансляцию</h1>
         <p role="alert">
           {loadError ?? "Трансляция не найдена"}

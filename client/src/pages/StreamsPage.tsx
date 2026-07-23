@@ -106,12 +106,16 @@ export function StreamsPage() {
   );
 
   return (
-    <main>
-      <h1>Live Stream Monitor</h1>
+    <main className="page-shell">
+      <header className="page-header">
+        <p className="eyebrow">Real-time dashboard</p>
+        <h1>Live Stream Monitor</h1>
+        <p>Создавайте трансляции и следите за эфиром.</p>
+      </header>
 
       <CreateStreamForm onCreate={handleCreate} />
 
-      <section>
+      <section className="streams-section">
         <h2>Трансляции</h2>
 
         {isLoading && <p>Загрузка трансляций...</p>}
@@ -129,7 +133,7 @@ export function StreamsPage() {
         )}
 
         {!isLoading && streams.length > 0 && (
-          <div>
+          <div className="streams-grid">
             {streams.map((stream) => (
               <StreamCard
                 key={stream.id}

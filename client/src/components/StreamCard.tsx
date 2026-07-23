@@ -35,13 +35,13 @@ export function StreamCard({
   onFinish,
 }: StreamCardProps) {
   return (
-    <article>
-      <header>
+    <article className={`stream-card stream-card--${stream.status}`}>
+      <header className="stream-card__header">
         <h2>{stream.title}</h2>
-        <p>{statusLabels[stream.status]}</p>
+        <p className="status-badge">{statusLabels[stream.status]}</p>
       </header>
 
-      <dl>
+      <dl className="stream-card__stats">
         <div>
           <dt>Зрители</dt>
           <dd>{stream.viewerCount}</dd>
@@ -58,11 +58,17 @@ export function StreamCard({
         </div>
       </dl>
 
-      <div>
-        <Link to={`/streams/${stream.id}`}>Открыть</Link>
+      <div className="stream-card__actions">
+        <Link
+          className="button button--secondary"
+          to={`/streams/${stream.id}`}
+        >
+          Открыть
+        </Link>
 
         {stream.status === "scheduled" && (
           <button
+            className="button button--primary"
             type="button"
             disabled={isUpdating}
             onClick={() => {
@@ -75,6 +81,7 @@ export function StreamCard({
 
         {stream.status === "live" && (
           <button
+            className="button button--danger"
             type="button"
             disabled={isUpdating}
             onClick={() => {
