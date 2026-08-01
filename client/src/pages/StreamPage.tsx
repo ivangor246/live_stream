@@ -89,7 +89,7 @@ function StreamContent({
         </p>
       </header>
 
-      <StreamPlayer status={streamStatus} />
+      <StreamPlayer status={streamStatus} connection={connection} />
 
       {connection && <StreamConnectionPanel connection={connection} />}
 

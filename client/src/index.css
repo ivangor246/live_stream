@@ -569,13 +569,39 @@ dd {
 }
 
 .stream-player__screen {
+  position: relative;
   display: grid;
   min-height: 280px;
   place-items: center;
-  font-size: 5rem;
   background:
     radial-gradient(circle, rgba(91, 91, 214, 0.3), transparent 45%),
     linear-gradient(145deg, #1d2939, #101828);
+}
+
+.stream-player__video {
+  display: block;
+  width: 100%;
+  min-height: 280px;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #000;
+}
+
+.stream-player__placeholder {
+  font-size: 5rem;
+}
+
+.stream-player__status {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  max-width: calc(100% - 2rem);
+  margin: 0;
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+  color: #fff;
+  background: rgba(16, 24, 40, 0.8);
+  transform: translateX(-50%);
 }
 
 .stream-player p {
@@ -797,6 +823,10 @@ dd {
   }
 
   .stream-player__screen {
+    min-height: 210px;
+  }
+
+  .stream-player__video {
     min-height: 210px;
   }
 
