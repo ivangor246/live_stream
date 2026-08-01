@@ -36,6 +36,9 @@ services:
       MEDIA_WEBRTC_URL: ${MEDIA_WEBRTC_URL:-http://localhost:8889}
       MEDIA_API_URL: ${MEDIA_API_URL:-http://mediamtx:9997}
       MEDIA_API_TIMEOUT: ${MEDIA_API_TIMEOUT:-2.0}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-live_stream_session}
+      AUTH_SESSION_TTL_DAYS: ${AUTH_SESSION_TTL_DAYS:-14}
+      AUTH_SECURE_COOKIE: ${AUTH_SECURE_COOKIE:-false}
     depends_on:
       mediamtx:
         condition: service_started

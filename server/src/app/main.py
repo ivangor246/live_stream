@@ -11,6 +11,8 @@ from app.core.config import settings
 from app.core.handlers import register_exception_handlers
 from app.database.session import close_database, create_database
 from app.repositories.postgres import PostgresStreamsRepository
+from app.repositories.auth import PostgresAuthRepository
+from app.services.auth import AuthService
 from app.services.media import MediaConnectionService, MediaStatusService
 from app.services.streams import StreamsService
 from app.services.websocket import WebSocketManager
@@ -24,7 +26,14 @@ def create_app() -> FastAPI:
         echo=settings.database_echo,
     )
     streams_repository = PostgresStreamsRepository(session_factory)
+    auth_repository = PostgresAuthRepository(session_factory)
     streams_service = StreamsService(streams_repository)
+    auth_service = AuthService(
+        repository=auth_repository,
+        cookie_name=settings.auth_cookie_name,
+        session_ttl_days=settings.auth_session_ttl_days,
+        secure_cookie=settings.auth_secure_cookie,
+    )
     media_connection_service = MediaConnectionService(
         rtmp_url=settings.media_rtmp_url,
         hls_url=settings.media_hls_url,
@@ -63,9 +72,10 @@ def create_app() -> FastAPI:
             database_engine,
             media_connection_service,
             media_status_service,
+            auth_service,
         ),
     )
-    register_websocket_route(application, websocket_manager)
+    register_websocket_route(application, websocket_manager, auth_service)
 
     return application
 

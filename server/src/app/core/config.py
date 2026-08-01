@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     media_webrtc_url: str = "http://localhost:8889"
     media_api_url: str = "http://localhost:9997"
     media_api_timeout: float = 2.0
+    auth_cookie_name: str = "live_stream_session"
+    auth_session_ttl_days: int = 14
+    auth_secure_cookie: bool = False
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(
