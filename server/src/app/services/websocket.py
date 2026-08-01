@@ -6,14 +6,14 @@ from dataclasses import dataclass
 from fastapi import WebSocket, WebSocketDisconnect
 from pydantic import TypeAdapter, ValidationError
 
-from .errors import AppError
-from .models import Stream, StreamStatus
-from .schemas import (
+from app.core.errors import AppError
+from app.schemas.stream import Stream
+from app.schemas.websocket import (
     ClientWebSocketMessage,
     ReactionSendMessage,
     ViewerJoinMessage,
 )
-from .service import StreamsService
+from app.services.streams import StreamsService
 
 logger = logging.getLogger(__name__)
 client_message_adapter = TypeAdapter(ClientWebSocketMessage)
@@ -103,9 +103,9 @@ class WebSocketManager:
 
         try:
             if isinstance(message, ViewerJoinMessage):
-                await self._handle_viewer_join(websocket, message, context)
+                await self._handle_viewer_join(message, context)
             elif isinstance(message, ReactionSendMessage):
-                await self._handle_reaction(websocket, message, context)
+                await self._handle_reaction(message, context)
         except AppError as error:
             await self._send_error(websocket, error.code, error.message)
         except Exception:
@@ -118,7 +118,6 @@ class WebSocketManager:
 
     async def _handle_viewer_join(
         self,
-        websocket: WebSocket,
         message: ViewerJoinMessage,
         context: ConnectionContext,
     ) -> None:
@@ -155,7 +154,6 @@ class WebSocketManager:
 
     async def _handle_reaction(
         self,
-        websocket: WebSocket,
         message: ReactionSendMessage,
         context: ConnectionContext,
     ) -> None:

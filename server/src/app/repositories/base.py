@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from app.schemas.stream import Stream
+
+
+class StreamsRepository(Protocol):
+    def find_all(self) -> list[Stream]: ...
+
+    def find_by_id(self, stream_id: str) -> Stream | None: ...
+
+    def create(self, title: str) -> Stream: ...
+
+    def update(self, stream: Stream) -> Stream: ...

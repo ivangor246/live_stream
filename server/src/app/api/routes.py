@@ -1,8 +1,8 @@
 from fastapi import APIRouter, status
 
-from .models import CreateStreamRequest, Stream
-from .schemas import HealthResponse
-from .service import StreamsService
+from app.schemas.api import HealthResponse
+from app.schemas.stream import CreateStreamRequest, Stream
+from app.services.streams import StreamsService
 
 
 def create_api_router(streams_service: StreamsService) -> APIRouter:

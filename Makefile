@@ -1,10 +1,6 @@
 SHELL := /bin/sh
 
-PYTHON ?= python3
-VENV ?= server/.venv
-VENV_PYTHON := $(VENV)/bin/python
-VENV_PIP := $(VENV)/bin/pip
-BACKEND_PYTHON := $(if $(wildcard $(VENV_PYTHON)),$(VENV_PYTHON),$(PYTHON))
+POETRY ?= poetry
 
 .PHONY: help install install-frontend install-backend dev-frontend dev-backend \
         lint build backend-check docker-build docker-up docker-down docker-logs
@@ -28,24 +24,24 @@ install-frontend:
 	cd client && npm ci
 
 install-backend:
-	$(PYTHON) -m venv $(VENV)
-	$(VENV_PIP) install -r server/requirements.txt
+	cd server && $(POETRY) install
 
 dev-frontend:
 	cd client && npm run dev -- --host 0.0.0.0
 
 dev-backend:
-	PYTHONPATH=server $(BACKEND_PYTHON) -m uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
+	cd server && $(POETRY) run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 
 lint:
 	cd client && npm run lint
+	cd server && $(POETRY) run ruff check src
 
 build:
 	cd client && npm run build
 
 backend-check:
-	$(BACKEND_PYTHON) -m compileall -q server/app
-	PYTHONPATH=server $(BACKEND_PYTHON) -c 'from app.main import app; print(app.title)'
+	cd server && $(POETRY) run python -m compileall -q src/app
+	cd server && $(POETRY) run python -c 'from app.main import app; print(app.title)'
 
 docker-build:
 	docker compose build

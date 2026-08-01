@@ -1,6 +1,5 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import StrEnum
-from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -36,16 +35,3 @@ class CreateStreamRequest(BaseModel):
             return value.strip()
 
         return value
-
-
-def create_stream(title: str) -> Stream:
-    return Stream(
-        id=str(uuid4()),
-        title=title,
-        status=StreamStatus.SCHEDULED,
-        viewer_count=0,
-        reaction_count=0,
-        created_at=datetime.now(timezone.utc),
-        started_at=None,
-        finished_at=None,
-    )

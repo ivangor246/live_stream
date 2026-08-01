@@ -1,9 +1,9 @@
 from collections.abc import Callable
 from datetime import datetime, timezone
 
-from .errors import AppError
-from .models import Stream, StreamStatus
-from .repository import StreamsRepository
+from app.core.errors import AppError
+from app.repositories.base import StreamsRepository
+from app.schemas.stream import Stream, StreamStatus
 
 StatusUpdateListener = Callable[[Stream], None]
 

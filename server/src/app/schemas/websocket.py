@@ -1,25 +1,13 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field
-
-from .models import StreamStatus
-
-
-class HealthResponse(BaseModel):
-    status: Literal["ok"]
-
-
-class ErrorPayload(BaseModel):
-    code: str
-    message: str
-
-
-class ApiErrorResponse(BaseModel):
-    error: ErrorPayload
 
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+
+ReactionType: TypeAlias = Literal["like", "fire", "clap"]
 
 
 class ViewerJoinPayload(StrictModel):
@@ -30,7 +18,7 @@ class ViewerJoinPayload(StrictModel):
 class ReactionSendPayload(StrictModel):
     stream_id: str = Field(alias="streamId", min_length=1)
     viewer_id: str = Field(alias="viewerId", min_length=1)
-    reaction: Literal["like", "fire", "clap"]
+    reaction: ReactionType
 
 
 class ViewerJoinMessage(StrictModel):
@@ -43,11 +31,7 @@ class ReactionSendMessage(StrictModel):
     payload: ReactionSendPayload
 
 
-ClientWebSocketMessage = Annotated[
+ClientWebSocketMessage: TypeAlias = Annotated[
     ViewerJoinMessage | ReactionSendMessage,
     Field(discriminator="type"),
 ]
-
-
-def status_value(status: StreamStatus) -> str:
-    return status.value

@@ -54,15 +54,16 @@ client/
     theme/            light/dark theme state
 
 server/
-  app/
-    api.py            REST routes
-    errors.py         application errors
-    main.py           FastAPI application assembly
-    models.py         domain and request models
-    repository.py     in-memory storage
-    schemas.py        API and WebSocket schemas
-    service.py        stream business rules
-    websocket.py      WebSocket connection manager
+  src/app/
+    api/              REST and WebSocket transport
+    core/              configuration and error handlers
+    repositories/     data access implementations
+    schemas/          Pydantic schemas
+    services/         stream and WebSocket business services
+    utils/             shared helpers
+    main.py            FastAPI application assembly
+  pyproject.toml      Poetry project with the app package
+  poetry.lock         locked backend dependencies
 
 client/Dockerfile     frontend build and Nginx image
 server/Dockerfile     Python 3.13 backend image
@@ -76,9 +77,10 @@ The old root-level `shared/` directory was removed. The frontend owns its TypeSc
 
 For local development:
 
-- Python 3.13 or newer in the Python 3.x line;
+- Python 3.13;
 - Node.js 22 or newer;
 - npm;
+- Poetry 2.1 or newer;
 - GNU Make is recommended.
 
 For containerized development:
@@ -111,7 +113,7 @@ The services can also be started directly:
 
 ```bash
 cd server
-./.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 ```
 
 ```bash
@@ -125,10 +127,10 @@ Run `make help` for the full list. The main commands are:
 
 | Command | Purpose |
 | --- | --- |
-| `make install` | Install frontend npm packages and backend packages into `server/.venv` |
+| `make install` | Install frontend npm packages and backend Poetry dependencies |
 | `make dev-frontend` | Start the Vite development server |
 | `make dev-backend` | Start the FastAPI development server |
-| `make lint` | Run the frontend ESLint checks |
+| `make lint` | Run frontend ESLint and backend Ruff checks |
 | `make build` | Build the frontend for production |
 | `make backend-check` | Compile-check and import-check the backend |
 | `make docker-build` | Build both Docker images |
@@ -150,7 +152,7 @@ The default addresses are:
 - backend: `http://localhost:3000`;
 - backend API documentation: `http://localhost:3000/docs`.
 
-The frontend image contains the Vite production build and Nginx. Nginx serves the single-page application, proxies `/api` to the backend service, and forwards WebSocket upgrades from `/ws`. The backend image uses Python 3.13 and Uvicorn.
+The frontend image contains the Vite production build and Nginx. Nginx serves the single-page application, proxies `/api` to the backend service, and forwards WebSocket upgrades from `/ws`. The backend image uses Python 3.13, Poetry, and Uvicorn.
 
 Stop the services with:
 

@@ -1,16 +1,7 @@
-from typing import Protocol
+from datetime import datetime, timezone
+from uuid import uuid4
 
-from .models import Stream, create_stream
-
-
-class StreamsRepository(Protocol):
-    def find_all(self) -> list[Stream]: ...
-
-    def find_by_id(self, stream_id: str) -> Stream | None: ...
-
-    def create(self, title: str) -> Stream: ...
-
-    def update(self, stream: Stream) -> Stream: ...
+from app.schemas.stream import Stream, StreamStatus
 
 
 class InMemoryStreamsRepository:
@@ -25,7 +16,16 @@ class InMemoryStreamsRepository:
         return stream.model_copy(deep=True) if stream else None
 
     def create(self, title: str) -> Stream:
-        stream = create_stream(title)
+        stream = Stream(
+            id=str(uuid4()),
+            title=title,
+            status=StreamStatus.SCHEDULED,
+            viewer_count=0,
+            reaction_count=0,
+            created_at=datetime.now(timezone.utc),
+            started_at=None,
+            finished_at=None,
+        )
         self._streams[stream.id] = stream
         return stream.model_copy(deep=True)
 
