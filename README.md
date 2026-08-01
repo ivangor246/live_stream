@@ -21,6 +21,7 @@ The current release provides:
 - an embedded WebRTC player with automatic HLS fallback;
 - first-run local administrator setup with cookie-based sessions;
 - protected stream management and dashboard WebSocket access;
+- short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
@@ -29,8 +30,8 @@ The current release provides:
 The dashboard prepares MediaMTX connection details and an embedded player for
 each live stream. It also polls the MediaMTX Control API and displays the
 current source status. Dashboard access is protected by a local administrator
-session, while MediaMTX media-path access control is still planned. The player
-prefers WebRTC and falls back to HLS.
+session. MediaMTX asks the backend to validate every publish and read request
+for a live path. The player prefers WebRTC and falls back to HLS.
 
 ## Technology
 
@@ -143,6 +144,11 @@ users. After setup, stream management endpoints and the dashboard WebSocket
 require the administrator session. Health and database readiness endpoints
 remain public so Docker and reverse proxies can check the service.
 
+MediaMTX receives short-lived per-stream credentials from the backend. The
+`MEDIA_AUTH_SECRET` value signs them and `MEDIA_AUTH_TOKEN_TTL_SECONDS` controls
+their lifetime. Set a strong `MEDIA_AUTH_SECRET` in the root `.env` before
+exposing the installation beyond a local network.
+
 For an HTTPS deployment, enable secure cookies in the root `.env` file:
 
 ```dotenv
@@ -171,7 +177,7 @@ Install dependencies and prepare the local environment:
 cp server/.env.example server/.env
 make install
 make db-up
-make media-up
+MEDIA_AUTH_URL=http://host.docker.internal:3000/api/media/auth make media-up
 ```
 
 Start the backend and frontend in separate terminals:
@@ -206,6 +212,8 @@ For a custom PostgreSQL connection, set `DATABASE_URL` in `server/.env`. For
 the local MediaMTX status endpoint, set `MEDIA_API_URL` to the Control API
 address. For Docker Compose, set the corresponding variables in a root `.env`
 file and use the Docker service hostname when a dependency runs inside Compose.
+The `MEDIA_AUTH_URL` override in the `make media-up` example connects the
+containerized MediaMTX service to a backend running directly on the host.
 
 ## Makefile commands
 
@@ -276,13 +284,19 @@ The API returns stream fields in the frontend contract format:
 ## Media workflow
 
 1. Create a stream in the dashboard.
-2. Copy the RTMP URL and random stream key from the stream page into OBS as a
-   custom RTMP server.
+2. Copy the complete RTMP publish URL from the stream page into OBS as a
+   custom RTMP server. It contains a short-lived publish credential.
 3. Start the stream in the dashboard. The backend creates its MediaMTX path.
-4. Publish the stream. MediaMTX makes the HLS and WebRTC links available in the
-   same panel.
+4. Publish the stream. MediaMTX validates the publish credential and makes the
+   HLS and WebRTC links available in the same panel.
 5. When the stream is live, the panel refreshes the source status every five
    seconds and shows the detected source protocol.
+
+The HLS and WebRTC links contain short-lived viewer credentials for copying or
+sharing. The embedded player removes them before making browser requests and
+sends the credentials in the `Authorization` header.
+
+The MediaMTX credential flow follows the [MediaMTX authentication guide](https://mediamtx.org/docs/features/authentication).
 
 For protocol-specific setup, see the [MediaMTX OBS guide](https://mediamtx.org/docs/publish/obs-studio),
 [HLS guide](https://mediamtx.org/docs/read/hls), and
@@ -351,7 +365,7 @@ page-specific styling.
 
 - one local administrator account only; no operator/viewer role separation;
 - no source-state history, alerts, or automatic stream lifecycle changes;
-- MediaMTX media paths do not yet require per-stream credentials;
+- no separate viewer roles or invitation links for media access;
 - media paths are removed only when the operator finishes a stream;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
