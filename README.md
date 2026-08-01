@@ -17,14 +17,15 @@ The current release provides:
 - stream status filters and sorting;
 - a first-run empty state and confirmation for finishing streams;
 - a MediaMTX service with RTMP publishing and HLS/WebRTC connection details;
+- an embedded WebRTC player with automatic HLS fallback;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
 - separate frontend, backend, PostgreSQL, and MediaMTX Docker services.
 
-The dashboard prepares MediaMTX connection details for each stream. An in-page
-video player and source-state synchronization are still planned, while the
-current release provides direct HLS and WebRTC links.
+The dashboard prepares MediaMTX connection details and an embedded player for
+each live stream. Source-state synchronization and access control are still
+planned, while the player prefers WebRTC and falls back to HLS.
 
 ## Technology
 
@@ -35,6 +36,7 @@ current release provides direct HLS and WebRTC links.
 - Vite;
 - React Router;
 - browser WebSocket API;
+- hls.js, loaded on demand for HLS fallback;
 - CSS custom properties and local UI components.
 
 ### Backend
@@ -305,7 +307,7 @@ page-specific styling.
 ## Current limitations
 
 - no authentication or role separation;
-- no in-page video player or source-state synchronization;
+- no source-state synchronization with MediaMTX;
 - stream keys are currently predictable UUIDs and have no access control;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
