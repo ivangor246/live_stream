@@ -5,13 +5,19 @@ import secrets
 from app.core.errors import AppError
 from app.repositories.base import StreamsRepository
 from app.schemas.stream import Stream, StreamStatus
+from app.services.media import MediaPathService
 
 StatusUpdateListener = Callable[[Stream], None]
 
 
 class StreamsService:
-    def __init__(self, streams_repository: StreamsRepository) -> None:
+    def __init__(
+        self,
+        streams_repository: StreamsRepository,
+        media_path_service: MediaPathService,
+    ) -> None:
         self._streams_repository = streams_repository
+        self._media_path_service = media_path_service
         self._status_update_listeners: set[StatusUpdateListener] = set()
         self._stream_viewers: dict[str, set[str]] = {}
 
@@ -65,6 +71,9 @@ class StreamsService:
                 "Finished stream cannot be started",
             )
 
+        stream_key = await self.get_stream_key(stream_id)
+        await self._media_path_service.ensure_path(stream_key)
+
         updated_stream = stream.model_copy(
             update={
                 "status": StreamStatus.LIVE,
@@ -91,6 +100,9 @@ class StreamsService:
                 "STREAM_ALREADY_FINISHED",
                 "Stream is already finished",
             )
+
+        stream_key = await self.get_stream_key(stream_id)
+        await self._media_path_service.delete_path(stream_key)
 
         updated_stream = stream.model_copy(
             update={

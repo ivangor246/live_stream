@@ -13,7 +13,11 @@ from app.database.session import close_database, create_database
 from app.repositories.postgres import PostgresStreamsRepository
 from app.repositories.auth import PostgresAuthRepository
 from app.services.auth import AuthService
-from app.services.media import MediaConnectionService, MediaStatusService
+from app.services.media import (
+    MediaConnectionService,
+    MediaPathService,
+    MediaStatusService,
+)
 from app.services.streams import StreamsService
 from app.services.websocket import WebSocketManager
 
@@ -27,7 +31,11 @@ def create_app() -> FastAPI:
     )
     streams_repository = PostgresStreamsRepository(session_factory)
     auth_repository = PostgresAuthRepository(session_factory)
-    streams_service = StreamsService(streams_repository)
+    media_path_service = MediaPathService(
+        api_url=settings.media_api_url,
+        timeout=settings.media_api_timeout,
+    )
+    streams_service = StreamsService(streams_repository, media_path_service)
     auth_service = AuthService(
         repository=auth_repository,
         cookie_name=settings.auth_cookie_name,

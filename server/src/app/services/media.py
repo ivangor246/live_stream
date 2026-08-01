@@ -9,6 +9,71 @@ from app.schemas.media import MediaPathStatus, StreamConnection
 logger = logging.getLogger(__name__)
 
 
+class MediaPathService:
+    def __init__(self, api_url: str, timeout: float) -> None:
+        self._api_url = api_url.rstrip("/")
+        self._timeout = timeout
+
+    async def ensure_path(self, stream_key: str) -> None:
+        get_url = self._get_config_url("get", stream_key)
+        add_url = self._get_config_url("add", stream_key)
+
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                current_response = await client.get(get_url)
+
+                if current_response.status_code == 200:
+                    return
+
+                if current_response.status_code != 404:
+                    _raise_media_path_error(
+                        "MEDIA_PATH_CREATE_FAILED",
+                        current_response.status_code,
+                    )
+
+                response = await client.post(add_url, json={"source": "publisher"})
+        except httpx.HTTPError as error:
+            logger.warning("MediaMTX path creation request failed: %s", error)
+            raise AppError(
+                503,
+                "MEDIA_SERVICE_UNAVAILABLE",
+                "The media server is unavailable",
+            ) from error
+
+        if response.is_error:
+            _raise_media_path_error(
+                "MEDIA_PATH_CREATE_FAILED",
+                response.status_code,
+            )
+
+    async def delete_path(self, stream_key: str) -> None:
+        request_url = self._get_config_url("delete", stream_key)
+
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                response = await client.delete(request_url)
+        except httpx.HTTPError as error:
+            logger.warning("MediaMTX path deletion request failed: %s", error)
+            raise AppError(
+                503,
+                "MEDIA_SERVICE_UNAVAILABLE",
+                "The media server is unavailable",
+            ) from error
+
+        if response.status_code == 404:
+            return
+
+        if response.is_error:
+            _raise_media_path_error(
+                "MEDIA_PATH_DELETE_FAILED",
+                response.status_code,
+            )
+
+    def _get_config_url(self, action: str, stream_key: str) -> str:
+        encoded_stream_key = quote(stream_key, safe="")
+        return f"{self._api_url}/v3/config/paths/{action}/{encoded_stream_key}"
+
+
 class MediaStatusService:
     def __init__(self, api_url: str, timeout: float) -> None:
         self._api_url = api_url.rstrip("/")
@@ -87,3 +152,15 @@ class MediaConnectionService:
             sourceStatus=path_status.source_status,
             sourceProtocol=path_status.source_protocol,
         )
+
+
+def _raise_media_path_error(code: str, status_code: int) -> None:
+    logger.warning(
+        "MediaMTX path request returned HTTP %s",
+        status_code,
+    )
+    raise AppError(
+        503,
+        code,
+        "The media path could not be updated",
+    )
