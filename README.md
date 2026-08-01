@@ -22,6 +22,7 @@ The current release provides:
 - first-run local administrator setup with cookie-based sessions;
 - administrator, operator, and viewer roles with protected stream management;
 - one-time account invitation links for operators and viewers;
+- private stream events with revocable viewer access links;
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - Russian and English localization;
 - light and dark themes;
@@ -158,6 +159,13 @@ the dashboard. The backend stores only a SHA-256 hash of each link token. Links
 expire after seven days by default, can be revoked while unused, and are shown
 in full only immediately after creation.
 
+When creating a stream, an administrator or operator can mark it as private.
+For a private stream, the stream page provides shareable viewer access links.
+The recipient can open a link and watch the stream without a dashboard account.
+Each link is a bearer credential, expires after seven days by default, and can
+be revoked at any time. The backend stores only its SHA-256 hash; the full link
+is shown only when it is created.
+
 MediaMTX receives short-lived per-stream credentials from the backend. The
 `MEDIA_AUTH_SECRET` value signs them and `MEDIA_AUTH_TOKEN_TTL_SECONDS` controls
 their lifetime. Set a strong `MEDIA_AUTH_SECRET` in the root `.env` before
@@ -169,11 +177,12 @@ For an HTTPS deployment, enable secure cookies in the root `.env` file:
 AUTH_SECURE_COOKIE=true
 AUTH_SESSION_TTL_DAYS=14
 AUTH_INVITE_TTL_HOURS=168
+STREAM_INVITE_TTL_HOURS=168
 ```
 
 Keep `AUTH_SECURE_COOKIE=false` for plain HTTP local development. Adjust
-`AUTH_INVITE_TTL_HOURS` if your installation needs a shorter or longer account
-invitation lifetime.
+`AUTH_INVITE_TTL_HOURS` or `STREAM_INVITE_TTL_HOURS` if your installation
+needs a shorter or longer invitation lifetime.
 
 ## Local development
 
@@ -267,10 +276,14 @@ Run `make help` for the full list:
 | `DELETE` | `/api/auth/invitations/{invitationId}` | Revoke an unused invitation (administrator only) |
 | `GET` | `/api/auth/invitations/{token}` | Check an invitation before accepting it |
 | `POST` | `/api/auth/invitations/{token}/accept` | Create an account from an invitation |
+| `GET` | `/api/viewer-invitations/{token}` | Get private-stream playback from a viewer link |
 | `GET` | `/api/streams` | Get all streams (any authenticated role) |
 | `GET` | `/api/streams/{streamId}` | Get one stream (any authenticated role) |
 | `GET` | `/api/streams/{streamId}/playback` | Get safe HLS/WebRTC playback details (any authenticated role) |
 | `GET` | `/api/streams/{streamId}/connection` | Get RTMP connection details (administrator or operator) |
+| `GET` | `/api/streams/{streamId}/viewer-invitations` | List active viewer links (administrator or operator) |
+| `POST` | `/api/streams/{streamId}/viewer-invitations` | Create a viewer link for a private stream (administrator or operator) |
+| `DELETE` | `/api/streams/{streamId}/viewer-invitations/{invitationId}` | Revoke a viewer link (administrator or operator) |
 | `POST` | `/api/streams` | Create a stream (administrator or operator) |
 | `POST` | `/api/streams/{streamId}/start` | Start a scheduled stream (administrator or operator) |
 | `POST` | `/api/streams/{streamId}/finish` | Finish a live stream (administrator or operator) |
@@ -283,7 +296,8 @@ Create a stream with:
 
 ```json
 {
-  "title": "Product launch"
+  "title": "Product launch",
+  "isPrivate": true
 }
 ```
 
@@ -293,6 +307,7 @@ The API returns stream fields in the frontend contract format:
 {
   "id": "...",
   "title": "Product launch",
+  "isPrivate": true,
   "status": "scheduled",
   "viewerCount": 0,
   "reactionCount": 0,
@@ -385,8 +400,8 @@ page-specific styling.
 ## Current limitations
 
 - no source-state history, alerts, or automatic stream lifecycle changes;
-- no private event audience or per-stream viewer invitation links;
 - account invitation links are not delivered by email or another notification service;
+- viewer links are bearer credentials and cannot yet be assigned to named attendees;
 - media paths are removed only when the operator finishes a stream;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
