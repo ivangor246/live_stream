@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     app_name: str = "Live Stream Monitor API"
     app_version: str = "1.0.0"
     cors_origins: str = "*"
+    database_url: str = "postgresql+asyncpg://live_stream:live_stream@localhost:5432/live_stream"
+    database_echo: bool = False
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(
