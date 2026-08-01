@@ -511,6 +511,21 @@ a:focus-visible {
   color: var(--color-text-soft);
 }
 
+.status-badge--online {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+}
+
+.status-badge--offline {
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+}
+
+.status-badge--unavailable {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+}
+
 .stream-card__stats,
 .stream-statistics {
   display: grid;
@@ -619,6 +634,15 @@ dd {
 .stream-connection header p {
   margin-bottom: 0;
   color: var(--color-text-soft);
+}
+
+.stream-connection__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-text-soft);
+  font-size: 0.85rem;
 }
 
 .stream-connection__fields {

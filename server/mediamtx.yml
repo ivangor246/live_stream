@@ -1,6 +1,22 @@
 # Enable the media protocols used by the self-hosted dashboard.
 api: yes
 apiAddress: 0.0.0.0:9997
+
+# Allow the backend to query the internal Control API.
+authInternalUsers:
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: publish
+        path:
+      - action: read
+        path:
+      - action: playback
+        path:
+      - action: api
+        path:
+
 rtmp: yes
 rtmpAddress: :1935
 hls: yes

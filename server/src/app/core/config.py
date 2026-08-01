@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     media_rtmp_url: str = "rtmp://localhost:1935"
     media_hls_url: str = "http://localhost:8888"
     media_webrtc_url: str = "http://localhost:8889"
+    media_api_url: str = "http://localhost:9997"
+    media_api_timeout: float = 2.0
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(

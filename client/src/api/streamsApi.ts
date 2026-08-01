@@ -6,6 +6,7 @@ import type {
   GetStreamResponse,
   GetStreamsResponse,
   ReadinessResponse,
+  MediaSourceStatus,
   StreamConnection,
 } from "../shared/api.js";
 
@@ -71,6 +72,10 @@ function isReadinessResponse(value: unknown): value is ReadinessResponse {
   return value.status === "ok" && value.database === "ok";
 }
 
+function isMediaSourceStatus(value: unknown): value is MediaSourceStatus {
+  return value === "online" || value === "offline" || value === "unavailable";
+}
+
 function isStreamConnection(value: unknown): value is StreamConnection {
   if (!isRecord(value)) {
     return false;
@@ -81,7 +86,9 @@ function isStreamConnection(value: unknown): value is StreamConnection {
     typeof value.rtmpUrl === "string" &&
     typeof value.streamKey === "string" &&
     typeof value.hlsUrl === "string" &&
-    typeof value.webrtcUrl === "string"
+    typeof value.webrtcUrl === "string" &&
+    isMediaSourceStatus(value.sourceStatus) &&
+    isNullableString(value.sourceProtocol)
   );
 }
 

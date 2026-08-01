@@ -5,12 +5,16 @@ export interface ReadinessResponse {
   database: "ok";
 }
 
+export type MediaSourceStatus = "online" | "offline" | "unavailable";
+
 export interface StreamConnection {
   streamId: string;
   rtmpUrl: string;
   streamKey: string;
   hlsUrl: string;
   webrtcUrl: string;
+  sourceStatus: MediaSourceStatus;
+  sourceProtocol: string | null;
 }
 
 export type CreateStreamRequest = Pick<Stream, "title">;

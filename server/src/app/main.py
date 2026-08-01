@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.handlers import register_exception_handlers
 from app.database.session import close_database, create_database
 from app.repositories.postgres import PostgresStreamsRepository
-from app.services.media import MediaConnectionService
+from app.services.media import MediaConnectionService, MediaStatusService
 from app.services.streams import StreamsService
 from app.services.websocket import WebSocketManager
 
@@ -29,6 +29,10 @@ def create_app() -> FastAPI:
         rtmp_url=settings.media_rtmp_url,
         hls_url=settings.media_hls_url,
         webrtc_url=settings.media_webrtc_url,
+    )
+    media_status_service = MediaStatusService(
+        api_url=settings.media_api_url,
+        timeout=settings.media_api_timeout,
     )
     websocket_manager = WebSocketManager(streams_service)
 
@@ -58,6 +62,7 @@ def create_app() -> FastAPI:
             streams_service,
             database_engine,
             media_connection_service,
+            media_status_service,
         ),
     )
     register_websocket_route(application, websocket_manager)

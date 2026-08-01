@@ -7,6 +7,7 @@ services:
       - "${MEDIA_RTMP_PORT:-1935}:1935"
       - "${MEDIA_HLS_PORT:-8888}:8888"
       - "${MEDIA_WEBRTC_PORT:-8889}:8889"
+      - "127.0.0.1:${MEDIA_API_PORT:-9997}:9997"
 
   postgres:
     image: postgres:16-alpine
@@ -33,6 +34,8 @@ services:
       MEDIA_RTMP_URL: ${MEDIA_RTMP_URL:-rtmp://localhost:1935}
       MEDIA_HLS_URL: ${MEDIA_HLS_URL:-http://localhost:8888}
       MEDIA_WEBRTC_URL: ${MEDIA_WEBRTC_URL:-http://localhost:8889}
+      MEDIA_API_URL: ${MEDIA_API_URL:-http://mediamtx:9997}
+      MEDIA_API_TIMEOUT: ${MEDIA_API_TIMEOUT:-2.0}
     depends_on:
       mediamtx:
         condition: service_started

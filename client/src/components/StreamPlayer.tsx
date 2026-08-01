@@ -126,13 +126,15 @@ export function StreamPlayer({
   const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mode, setMode] = useState<PlayerMode>("idle");
+  const webrtcUrl = connection?.webrtcUrl;
+  const hlsUrl = connection?.hlsUrl;
 
   useEffect(() => {
-    if (status !== "live" || !connection) {
+    if (status !== "live" || !webrtcUrl) {
       return;
     }
 
-    const streamConnection = connection;
+    const streamWebrtcUrl = webrtcUrl;
     let cancelled = false;
     let peerConnection: RTCPeerConnection | null = null;
     const abortController = new AbortController();
@@ -147,7 +149,7 @@ export function StreamPlayer({
       try {
         peerConnection = await connectWebRtc(
           video,
-          streamConnection.webrtcUrl,
+          streamWebrtcUrl,
           abortController.signal,
         );
 
@@ -181,10 +183,10 @@ export function StreamPlayer({
         video.srcObject = null;
       }
     };
-  }, [connection, status]);
+  }, [status, webrtcUrl]);
 
   useEffect(() => {
-    if (mode !== "hls" || status !== "live" || !connection) {
+    if (mode !== "hls" || status !== "live" || !hlsUrl) {
       return;
     }
 
@@ -193,8 +195,8 @@ export function StreamPlayer({
       return;
     }
 
+    const streamHlsUrl = hlsUrl;
     const playerVideo = video;
-    const streamConnection = connection;
     let active = true;
     let hls: Hls | null = null;
 
@@ -218,12 +220,12 @@ export function StreamPlayer({
         });
         hls.on(HlsPlayer.Events.MEDIA_ATTACHED, () => {
           if (active) {
-            hls?.loadSource(streamConnection.hlsUrl);
+            hls?.loadSource(streamHlsUrl);
           }
         });
         hls.attachMedia(playerVideo);
       } else if (playerVideo.canPlayType("application/vnd.apple.mpegurl")) {
-        playerVideo.src = streamConnection.hlsUrl;
+        playerVideo.src = streamHlsUrl;
         void playerVideo.play().catch(() => undefined);
       } else {
         setMode("unsupported");
@@ -239,7 +241,7 @@ export function StreamPlayer({
       playerVideo.removeAttribute("src");
       playerVideo.load();
     };
-  }, [connection, mode, status]);
+  }, [hlsUrl, mode, status]);
 
   const isLive = status === "live";
   const hasPlayback = isLive && connection;

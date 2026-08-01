@@ -7,7 +7,7 @@ from app.database.session import check_database_connection
 from app.schemas.api import HealthResponse, ReadinessResponse
 from app.schemas.media import StreamConnection
 from app.schemas.stream import CreateStreamRequest, Stream
-from app.services.media import MediaConnectionService
+from app.services.media import MediaConnectionService, MediaStatusService
 from app.services.streams import StreamsService
 
 
@@ -15,6 +15,7 @@ def create_api_router(
     streams_service: StreamsService,
     database_engine: AsyncEngine,
     media_connection_service: MediaConnectionService,
+    media_status_service: MediaStatusService,
 ) -> APIRouter:
     router = APIRouter(prefix="/api")
 
@@ -46,7 +47,8 @@ def create_api_router(
     @router.get("/streams/{stream_id}/connection", response_model=StreamConnection)
     async def get_stream_connection(stream_id: str) -> StreamConnection:
         await streams_service.get_stream(stream_id)
-        return media_connection_service.get_connection(stream_id)
+        path_status = await media_status_service.get_path_status(stream_id)
+        return media_connection_service.get_connection(stream_id, path_status)
 
     @router.post(
         "/streams",

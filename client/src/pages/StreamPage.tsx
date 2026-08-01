@@ -26,6 +26,8 @@ import { Button } from "../components/ui/Button.js";
 import { ButtonLink } from "../components/ui/ButtonLink.js";
 import { useStreamSocket } from "../hooks/useStreamSocket.js";
 
+const mediaStatusRefreshInterval = 5_000;
+
 interface StreamContentProps {
   stream: Stream;
   connection: StreamConnection | null;
@@ -162,6 +164,9 @@ export function StreamPage() {
     async function loadStream(): Promise<void> {
       setIsLoading(true);
       setLoadError(null);
+      setConnection(null);
+      setConnectionError(null);
+      setConnectionErrorStreamId(null);
 
       try {
         const loadedStream = await getStream(
@@ -205,6 +210,52 @@ export function StreamPage() {
       abortController.abort();
     };
   }, [streamId, t]);
+
+  useEffect(() => {
+    if (!streamId || stream?.id !== streamId || stream.status !== "live") {
+      return;
+    }
+
+    const currentStreamId = streamId;
+    const abortController = new AbortController();
+    let active = true;
+
+    async function refreshMediaStatus(): Promise<void> {
+      try {
+        const streamConnection = await getStreamConnection(
+          currentStreamId,
+          abortController.signal,
+        );
+
+        if (!active) {
+          return;
+        }
+
+        setConnection(streamConnection);
+        setConnectionError(null);
+        setConnectionErrorStreamId(null);
+      } catch (error: unknown) {
+        if (!active || isAbortError(error)) {
+          return;
+        }
+
+        setConnectionError(
+          localizeError(error, t, "errors.loadConnection"),
+        );
+        setConnectionErrorStreamId(currentStreamId);
+      }
+    }
+
+    const intervalId = window.setInterval(() => {
+      void refreshMediaStatus();
+    }, mediaStatusRefreshInterval);
+
+    return () => {
+      active = false;
+      abortController.abort();
+      window.clearInterval(intervalId);
+    };
+  }, [stream?.id, stream?.status, streamId, t]);
 
   const handleFinish = useCallback((): void => {
     if (!streamId || !window.confirm(t("streams.confirmFinish"))) {
