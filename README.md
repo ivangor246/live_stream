@@ -13,6 +13,9 @@ The current release provides:
 - REST and WebSocket APIs;
 - viewer counts and live reactions;
 - health and database readiness endpoints;
+- a backend and database status indicator in the dashboard;
+- stream status filters and sorting;
+- a first-run empty state and confirmation for finishing streams;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
