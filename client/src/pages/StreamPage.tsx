@@ -21,6 +21,7 @@ import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 import { ConnectionStatus } from "../components/ConnectionStatus.js";
 import { ReactionPanel } from "../components/ReactionPanel.js";
 import { StreamConnectionPanel } from "../components/StreamConnectionPanel.js";
+import { StreamArchive } from "../components/StreamArchive.js";
 import { StreamPlayer } from "../components/StreamPlayer.js";
 import { StreamStatistics } from "../components/StreamStatistics.js";
 import { ViewerAccessPanel } from "../components/ViewerAccessPanel.js";
@@ -100,6 +101,8 @@ function StreamContent({
       </header>
 
       <StreamPlayer status={streamStatus} connection={playback} />
+
+      {streamStatus === "finished" && <StreamArchive streamId={stream.id} />}
 
       {canManage && connection && <StreamConnectionPanel connection={connection} />}
 

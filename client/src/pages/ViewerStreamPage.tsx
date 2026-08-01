@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 
 import { getViewerInvitationPlayback } from "../api/streamsApi.js";
 import { StreamPlayer } from "../components/StreamPlayer.js";
+import { StreamArchive } from "../components/StreamArchive.js";
 import { Card } from "../components/ui/Card.js";
 import { localizeError } from "../i18n/errorMessages.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
@@ -94,6 +95,10 @@ export function ViewerStreamPage() {
       </header>
 
       <StreamPlayer status={stream.status} connection={playback} />
+
+      {stream.status === "finished" && token && (
+        <StreamArchive streamId={stream.id} viewerToken={token} />
+      )}
     </main>
   );
 }

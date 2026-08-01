@@ -886,6 +886,31 @@ dd {
   font-weight: 700;
 }
 
+.stream-archive {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.stream-archive header p,
+.stream-archive > p {
+  margin-bottom: 0;
+  color: var(--color-text-soft);
+}
+
+.stream-archive__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.stream-archive__player {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
 .connection-status {
   display: inline-flex;
   width: fit-content;

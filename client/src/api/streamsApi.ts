@@ -6,8 +6,10 @@ import type {
   GetStreamResponse,
   GetStreamsResponse,
   GetStreamViewerInvitationsResponse,
+  RecordingSegment,
   ReadinessResponse,
   MediaSourceStatus,
+  GetStreamRecordingsResponse,
   StreamConnection,
   StreamPlayback,
   ViewerInvitationPlayback,
@@ -98,6 +100,25 @@ function isStreamViewerInvitations(
   value: unknown,
 ): value is GetStreamViewerInvitationsResponse {
   return Array.isArray(value) && value.every(isStreamViewerInvitation);
+}
+
+function isRecordingSegment(value: unknown): value is RecordingSegment {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.startAt === "string" &&
+    typeof value.durationSeconds === "number" &&
+    Number.isFinite(value.durationSeconds) &&
+    value.durationSeconds > 0
+  );
+}
+
+function isRecordingSegments(
+  value: unknown,
+): value is GetStreamRecordingsResponse {
+  return Array.isArray(value) && value.every(isRecordingSegment);
 }
 
 function isStreams(value: unknown): value is GetStreamsResponse {
@@ -258,6 +279,58 @@ export function getStreamPlayback(
     isStreamPlayback,
     createSignalInit(signal),
   );
+}
+
+export function getStreamRecordings(
+  streamId: string,
+  signal?: AbortSignal,
+): Promise<GetStreamRecordingsResponse> {
+  const encodedStreamId = encodeURIComponent(streamId);
+
+  return request<GetStreamRecordingsResponse>(
+    `/api/streams/${encodedStreamId}/recordings`,
+    isRecordingSegments,
+    createSignalInit(signal),
+  );
+}
+
+export function getViewerInvitationRecordings(
+  token: string,
+  signal?: AbortSignal,
+): Promise<GetStreamRecordingsResponse> {
+  const encodedToken = encodeURIComponent(token);
+
+  return request<GetStreamRecordingsResponse>(
+    `/api/viewer-invitations/${encodedToken}/recordings`,
+    isRecordingSegments,
+    createSignalInit(signal),
+  );
+}
+
+export function getStreamRecordingPlaybackUrl(
+  streamId: string,
+  recording: RecordingSegment,
+): string {
+  const encodedStreamId = encodeURIComponent(streamId);
+  const query = new URLSearchParams({
+    start: recording.startAt,
+    duration: String(recording.durationSeconds),
+  });
+
+  return `/api/streams/${encodedStreamId}/recordings/playback?${query}`;
+}
+
+export function getViewerInvitationRecordingPlaybackUrl(
+  token: string,
+  recording: RecordingSegment,
+): string {
+  const encodedToken = encodeURIComponent(token);
+  const query = new URLSearchParams({
+    start: recording.startAt,
+    duration: String(recording.durationSeconds),
+  });
+
+  return `/api/viewer-invitations/${encodedToken}/recordings/playback?${query}`;
 }
 
 export function getStreamViewerInvitations(

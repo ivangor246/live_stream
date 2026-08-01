@@ -24,6 +24,11 @@ export interface StreamConnection extends StreamPlayback {
   streamKey: string;
 }
 
+export interface RecordingSegment {
+  startAt: string;
+  durationSeconds: number;
+}
+
 export type CreateStreamRequest = Pick<Stream, "title" | "isPrivate">;
 
 export type CreateStreamResponse = Stream;
@@ -33,6 +38,8 @@ export type GetStreamsResponse = Stream[];
 export type GetStreamResponse = Stream;
 
 export type ChangeStreamStatusResponse = Stream;
+
+export type GetStreamRecordingsResponse = RecordingSegment[];
 
 export interface ViewerInvitationPlayback {
   stream: Stream;
