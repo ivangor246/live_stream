@@ -4,6 +4,7 @@ PYTHON ?= python3
 VENV ?= server/.venv
 VENV_PYTHON := $(VENV)/bin/python
 VENV_PIP := $(VENV)/bin/pip
+BACKEND_PYTHON := $(if $(wildcard $(VENV_PYTHON)),$(VENV_PYTHON),$(PYTHON))
 
 .PHONY: help install install-frontend install-backend dev-frontend dev-backend \
         lint build backend-check docker-build docker-up docker-down docker-logs
@@ -34,7 +35,7 @@ dev-frontend:
 	cd client && npm run dev -- --host 0.0.0.0
 
 dev-backend:
-	PYTHONPATH=server $(PYTHON) -m uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
+	PYTHONPATH=server $(BACKEND_PYTHON) -m uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 
 lint:
 	cd client && npm run lint
@@ -43,8 +44,8 @@ build:
 	cd client && npm run build
 
 backend-check:
-	$(PYTHON) -m compileall -q server/app
-	PYTHONPATH=server $(PYTHON) -c 'from app.main import app; print(app.title)'
+	$(BACKEND_PYTHON) -m compileall -q server/app
+	PYTHONPATH=server $(BACKEND_PYTHON) -c 'from app.main import app; print(app.title)'
 
 docker-build:
 	docker compose build
