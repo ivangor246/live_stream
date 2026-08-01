@@ -1,28 +1,25 @@
 # Live Stream Monitor
 
-Fullstack-приложение для создания и мониторинга live-трансляций. Frontend и backend написаны на TypeScript и используют общие типы для HTTP- и WebSocket-сообщений.
+Live Stream Monitor is an exploratory full-stack application for creating and monitoring live streams. The final product direction is intentionally open, so the code focuses on a small, extensible real-time dashboard rather than committing to authentication, persistent storage, or video delivery.
 
-Передача видео не реализована: на странице трансляции отображается заглушка плеера.
+The current application supports:
 
-## Текущее состояние
+- creating scheduled streams;
+- starting and finishing streams;
+- listing and opening streams through a REST API;
+- tracking connected viewers through WebSocket;
+- broadcasting viewer counts, reactions, and status changes;
+- `like`, `fire`, and `clap` reactions;
+- validation and structured API/WebSocket errors;
+- Russian and English frontend localization;
+- browser-language detection with English fallback;
+- light and dark themes;
+- reusable frontend UI components with configurable visual tokens;
+- separate frontend and backend Docker services.
 
-В приложении реализованы:
+Video transport is not implemented yet. The stream page currently displays a player placeholder. Stream data is stored in memory and is lost when the backend restarts.
 
-- создание трансляции со статусом `scheduled`;
-- запуск трансляции с переходом `scheduled -> live`;
-- завершение трансляции с переходом `live -> finished`;
-- получение списка и отдельной трансляции через REST API;
-- учёт подключённых зрителей через WebSocket;
-- обновление счётчика зрителей при подключении и отключении;
-- реакции `like`, `fire` и `clap`;
-- рассылка изменений всем WebSocket-клиентам конкретной трансляции;
-- блокировка новых зрителей и реакций после завершения трансляции;
-- валидация HTTP- и WebSocket-данных;
-- централизованные API-ошибки;
-- graceful shutdown HTTP- и WebSocket-сервера;
-- адаптивный frontend-интерфейс.
-
-## Технологии
+## Technology
 
 ### Frontend
 
@@ -30,174 +27,232 @@ Fullstack-приложение для создания и мониторинга
 - TypeScript;
 - Vite;
 - React Router;
-- WebSocket API;
-- CSS.
+- browser WebSocket API;
+- CSS custom properties and local UI components.
 
 ### Backend
 
-- Node.js;
-- TypeScript;
-- Express;
-- `ws`;
-- Zod;
-- in-memory-хранилище.
+- Python 3.13;
+- FastAPI;
+- Uvicorn;
+- Pydantic;
+- in-memory repository.
 
-## Структура проекта
+## Repository structure
 
 ```text
 client/
   src/
-    api/          типизированный HTTP-клиент
-    components/   UI-компоненты
-    hooks/        WebSocket-хук
-    pages/        страницы React Router
-    types/        клиентские типы
+    api/              typed HTTP client
+    components/       reusable feature and layout components
+      layout/         application header and preference controls
+      ui/              local visual component library
+    hooks/            client hooks, including WebSocket state
+    i18n/             locale resources and error translation
+    pages/            route-level screens
+    shared/           frontend-owned TypeScript contracts
+    theme/            light/dark theme state
 
 server/
-  src/
-    controllers/  HTTP-контроллеры
-    errors/       ошибки приложения
-    middleware/   Express middleware
-    repositories/ in-memory-хранилище
-    routes/        REST-маршруты
-    services/      бизнес-логика
-    websocket/     WebSocket-сервер и обработка сообщений
+  app/
+    api.py            REST routes
+    errors.py         application errors
+    main.py           FastAPI application assembly
+    models.py         domain and request models
+    repository.py     in-memory storage
+    schemas.py        API and WebSocket schemas
+    service.py        stream business rules
+    websocket.py      WebSocket connection manager
 
-shared/            общие TypeScript-контракты
+client/Dockerfile     frontend build and Nginx image
+server/Dockerfile     Python 3.13 backend image
+docker-compose.yml    separate frontend and backend services
+Makefile              common local and Docker commands
 ```
 
-Поток HTTP-запроса:
+The old root-level `shared/` directory was removed. The frontend owns its TypeScript contracts under `client/src/shared`; the Python backend validates its own external data with Pydantic models.
 
-```text
-route -> controller -> service -> repository
+## Requirements
+
+For local development:
+
+- Python 3.13 or newer in the Python 3.x line;
+- Node.js 22 or newer;
+- npm;
+- GNU Make is recommended.
+
+For containerized development:
+
+- Docker with Docker Compose support.
+
+## Local development
+
+Install both sets of dependencies:
+
+```bash
+make install
 ```
 
-WebSocket-обработчик использует тот же экземпляр service, что и HTTP-контроллеры.
+Start the backend and frontend in separate terminals:
 
-## Требования для запуска
+```bash
+make dev-backend
+```
 
-- Node.js 22 или новее;
-- npm.
+The FastAPI server is available at `http://localhost:3000`. Interactive API documentation is available at `http://localhost:3000/docs`.
 
-## Установка
+```bash
+make dev-frontend
+```
 
-Зависимости frontend и backend устанавливаются отдельно.
+The Vite frontend is available at `http://localhost:5173`. Its development proxy forwards `/api` and `/ws` to the backend.
+
+The services can also be started directly:
 
 ```bash
 cd server
-npm install
+./.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 ```
 
 ```bash
 cd client
-npm install
+npm run dev -- --host 0.0.0.0
 ```
 
-## Запуск в режиме разработки
+## Makefile commands
 
-Запустите backend в первом терминале:
+Run `make help` for the full list. The main commands are:
+
+| Command | Purpose |
+| --- | --- |
+| `make install` | Install frontend npm packages and backend packages into `server/.venv` |
+| `make dev-frontend` | Start the Vite development server |
+| `make dev-backend` | Start the FastAPI development server |
+| `make lint` | Run the frontend ESLint checks |
+| `make build` | Build the frontend for production |
+| `make backend-check` | Compile-check and import-check the backend |
+| `make docker-build` | Build both Docker images |
+| `make docker-up` | Build and start both Docker services |
+| `make docker-down` | Stop and remove the Docker services |
+| `make docker-logs` | Follow Docker service logs |
+
+## Docker
+
+Build and start the separate services with:
 
 ```bash
-cd server
-npm run dev
+make docker-up
 ```
 
-По умолчанию backend доступен по адресу `http://localhost:3000`.
+The default addresses are:
 
-Запустите frontend во втором терминале:
+- frontend: `http://localhost:8080`;
+- backend: `http://localhost:3000`;
+- backend API documentation: `http://localhost:3000/docs`.
+
+The frontend image contains the Vite production build and Nginx. Nginx serves the single-page application, proxies `/api` to the backend service, and forwards WebSocket upgrades from `/ws`. The backend image uses Python 3.13 and Uvicorn.
+
+Stop the services with:
 
 ```bash
-cd client
-npm run dev
+make docker-down
 ```
 
-Frontend будет доступен по адресу `http://localhost:5173`.
-
-Vite перенаправляет HTTP-запросы `/api` и WebSocket-соединения `/ws` на backend.
-
-## Сборка frontend
+The following environment variables can change the published ports or CORS origin:
 
 ```bash
-cd client
-npm run build
+FRONTEND_PORT=8081 BACKEND_PORT=3001 CORS_ORIGINS=http://localhost:8081 make docker-up
 ```
 
-Результат сборки создаётся в `client/dist`.
+## REST API
 
-Локальный просмотр сборки:
-
-```bash
-cd client
-npm run preview
-```
-
-Backend запускается без watch-режима командой:
-
-```bash
-cd server
-npm start
-```
-
-## Проверка кода
-
-Frontend:
-
-```bash
-cd client
-npm run build
-npm run lint
-```
-
-Backend:
-
-```bash
-cd server
-npm run typecheck
-```
-
-## HTTP API
-
-| Метод | URL | Назначение |
+| Method | URL | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/health` | Проверка доступности backend |
-| `GET` | `/api/streams` | Получить список трансляций |
-| `GET` | `/api/streams/:streamId` | Получить трансляцию |
-| `POST` | `/api/streams` | Создать трансляцию |
-| `POST` | `/api/streams/:streamId/start` | Запустить трансляцию |
-| `POST` | `/api/streams/:streamId/finish` | Завершить трансляцию |
+| `GET` | `/api/health` | Check backend availability |
+| `GET` | `/api/streams` | Get all streams |
+| `GET` | `/api/streams/{streamId}` | Get one stream |
+| `POST` | `/api/streams` | Create a stream |
+| `POST` | `/api/streams/{streamId}/start` | Start a scheduled stream |
+| `POST` | `/api/streams/{streamId}/finish` | Finish a live stream |
 
-## WebSocket
+Create a stream with:
 
-Точка подключения:
+```json
+{
+  "title": "Product launch"
+}
+```
+
+The API returns stream fields in the frontend contract format:
+
+```json
+{
+  "id": "...",
+  "title": "Product launch",
+  "status": "scheduled",
+  "viewerCount": 0,
+  "reactionCount": 0,
+  "createdAt": "2026-08-01T09:00:00Z",
+  "startedAt": null,
+  "finishedAt": null
+}
+```
+
+## WebSocket API
+
+Connect to:
 
 ```text
 ws://localhost:3000/ws
 ```
 
-Сообщения от клиента:
+The frontend sends a viewer join message:
 
-```text
-viewer:join
-reaction:send
+```json
+{
+  "type": "viewer:join",
+  "payload": {
+    "streamId": "...",
+    "viewerId": "..."
+  }
+}
 ```
 
-Сообщения от сервера:
+Reactions use the same connection:
 
-```text
-stream:viewers-updated
-stream:reaction-received
-stream:status-updated
-error
+```json
+{
+  "type": "reaction:send",
+  "payload": {
+    "streamId": "...",
+    "viewerId": "...",
+    "reaction": "like"
+  }
+}
 ```
 
-## Хранение данных
+Server messages are:
 
-Трансляции и зрители хранятся в памяти backend-процесса. После его перезапуска данные очищаются.
+- `stream:viewers-updated`;
+- `stream:reaction-received`;
+- `stream:status-updated`;
+- `error`.
 
-## Ограничения текущей версии
+Only viewers connected to a live stream can send reactions. A finished stream rejects new viewers and reactions.
 
-- нет авторизации и разделения ролей;
-- нет постоянного хранилища;
-- нет передачи видео;
-- WebSocket-клиент не переподключается автоматически;
-- состояние WebSocket не синхронизируется между несколькими backend-процессами.
+## Frontend preferences and visual system
+
+The frontend detects the first supported browser language from `navigator.languages` and `navigator.language`. Russian is selected for `ru-*`, English for `en-*`, and English is used for all other languages. A manual language selection is stored in `localStorage`.
+
+The theme switcher stores the explicit light/dark choice in `localStorage`. If no choice exists, the initial theme follows `prefers-color-scheme`.
+
+Reusable components such as `Button`, `ButtonLink`, `Card`, and `StatusBadge` live under `client/src/components/ui`. Pages use CSS custom properties from `client/src/index.css` for surfaces, colors, borders, shadows, and radii, so a visual style can be changed centrally. Component variants are preferred over page-specific styling.
+
+## Limitations
+
+- no authentication or role separation;
+- no persistent database;
+- no video ingestion or playback;
+- no automatic WebSocket reconnection;
+- WebSocket state is local to one backend process;
+- the in-memory repository is not suitable for multiple backend replicas.
