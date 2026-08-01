@@ -42,9 +42,16 @@ class PostgresStreamsRepository:
             record = await session.get(StreamRecord, stream_id)
             return _to_stream(record) if record else None
 
-    async def create(self, title: str) -> Stream:
+    async def find_stream_key(self, stream_id: str) -> str | None:
+        query = select(StreamRecord.stream_key).where(StreamRecord.id == stream_id)
+
+        async with self._session_factory() as session:
+            return await session.scalar(query)
+
+    async def create(self, title: str, stream_key: str) -> Stream:
         record = StreamRecord(
             id=str(uuid4()),
+            stream_key=stream_key,
             title=title,
             status=StreamStatus.SCHEDULED.value,
             viewer_count=0,

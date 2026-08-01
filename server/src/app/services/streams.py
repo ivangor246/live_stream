@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime, timezone
+import secrets
 
 from app.core.errors import AppError
 from app.repositories.base import StreamsRepository
@@ -38,7 +39,18 @@ class StreamsService:
         return stream
 
     async def create_stream(self, title: str) -> Stream:
-        return await self._streams_repository.create(title)
+        return await self._streams_repository.create(
+            title,
+            secrets.token_urlsafe(32),
+        )
+
+    async def get_stream_key(self, stream_id: str) -> str:
+        stream_key = await self._streams_repository.find_stream_key(stream_id)
+
+        if not stream_key:
+            raise AppError(404, "STREAM_NOT_FOUND", "Stream was not found")
+
+        return stream_key
 
     async def start_stream(self, stream_id: str) -> Stream:
         stream = await self.get_stream(stream_id)

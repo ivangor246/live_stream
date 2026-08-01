@@ -10,6 +10,7 @@ class StreamRecord(Base):
     __tablename__ = "streams"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    stream_key: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     viewer_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

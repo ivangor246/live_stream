@@ -63,8 +63,13 @@ def create_api_router(
     )
     async def get_stream_connection(stream_id: str) -> StreamConnection:
         await streams_service.get_stream(stream_id)
-        path_status = await media_status_service.get_path_status(stream_id)
-        return media_connection_service.get_connection(stream_id, path_status)
+        stream_key = await streams_service.get_stream_key(stream_id)
+        path_status = await media_status_service.get_path_status(stream_key)
+        return media_connection_service.get_connection(
+            stream_id,
+            stream_key,
+            path_status,
+        )
 
     @router.post(
         "/streams",

@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 import httpx
 
+from app.core.errors import AppError
 from app.schemas.media import MediaPathStatus, StreamConnection
 
 logger = logging.getLogger(__name__)
@@ -13,9 +14,9 @@ class MediaStatusService:
         self._api_url = api_url.rstrip("/")
         self._timeout = timeout
 
-    async def get_path_status(self, stream_id: str) -> MediaPathStatus:
-        encoded_stream_id = quote(stream_id, safe="")
-        request_url = f"{self._api_url}/v3/paths/get/{encoded_stream_id}"
+    async def get_path_status(self, stream_key: str) -> MediaPathStatus:
+        encoded_stream_key = quote(stream_key, safe="")
+        request_url = f"{self._api_url}/v3/paths/get/{encoded_stream_key}"
 
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
@@ -74,14 +75,15 @@ class MediaConnectionService:
     def get_connection(
         self,
         stream_id: str,
+        stream_key: str,
         path_status: MediaPathStatus,
     ) -> StreamConnection:
         return StreamConnection(
             streamId=stream_id,
             rtmpUrl=self._rtmp_url,
-            streamKey=stream_id,
-            hlsUrl=f"{self._hls_url}/{stream_id}/index.m3u8",
-            webrtcUrl=f"{self._webrtc_url}/{stream_id}",
+            streamKey=stream_key,
+            hlsUrl=f"{self._hls_url}/{stream_key}/index.m3u8",
+            webrtcUrl=f"{self._webrtc_url}/{stream_key}",
             sourceStatus=path_status.source_status,
             sourceProtocol=path_status.source_protocol,
         )
