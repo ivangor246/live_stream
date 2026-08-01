@@ -8,6 +8,7 @@ import type {
   ReadinessResponse,
   MediaSourceStatus,
   StreamConnection,
+  StreamPlayback,
 } from "../shared/api.js";
 
 import type { Stream, StreamStatus } from "../shared/stream.js";
@@ -76,20 +77,30 @@ function isMediaSourceStatus(value: unknown): value is MediaSourceStatus {
   return value === "online" || value === "offline" || value === "unavailable";
 }
 
-function isStreamConnection(value: unknown): value is StreamConnection {
+function isStreamPlayback(value: unknown): value is StreamPlayback {
   if (!isRecord(value)) {
     return false;
   }
 
   return (
     typeof value.streamId === "string" &&
-    typeof value.rtmpUrl === "string" &&
-    typeof value.rtmpPublishUrl === "string" &&
-    typeof value.streamKey === "string" &&
     typeof value.hlsUrl === "string" &&
     typeof value.webrtcUrl === "string" &&
     isMediaSourceStatus(value.sourceStatus) &&
     isNullableString(value.sourceProtocol)
+  );
+}
+
+function isStreamConnection(value: unknown): value is StreamConnection {
+  if (!isRecord(value) || !isStreamPlayback(value)) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.rtmpUrl === "string" &&
+    typeof record.rtmpPublishUrl === "string" &&
+    typeof record.streamKey === "string"
   );
 }
 
@@ -183,6 +194,19 @@ export function getStreamConnection(
   return request<StreamConnection>(
     `/api/streams/${encodedStreamId}/connection`,
     isStreamConnection,
+    createSignalInit(signal),
+  );
+}
+
+export function getStreamPlayback(
+  streamId: string,
+  signal?: AbortSignal,
+): Promise<StreamPlayback> {
+  const encodedStreamId = encodeURIComponent(streamId);
+
+  return request<StreamPlayback>(
+    `/api/streams/${encodedStreamId}/playback`,
+    isStreamPlayback,
     createSignalInit(signal),
   );
 }

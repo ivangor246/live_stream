@@ -9,11 +9,12 @@ import type {
   Stream,
   StreamStatus,
 } from "../shared/stream.js";
-import type { StreamConnection } from "../shared/api.js";
+import type { StreamConnection, StreamPlayback } from "../shared/api.js";
 import {
   finishStream,
   getStream,
   getStreamConnection,
+  getStreamPlayback,
 } from "../api/streamsApi.js";
 import { localizeError } from "../i18n/errorMessages.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
@@ -25,12 +26,16 @@ import { StreamStatistics } from "../components/StreamStatistics.js";
 import { Button } from "../components/ui/Button.js";
 import { ButtonLink } from "../components/ui/ButtonLink.js";
 import { useStreamSocket } from "../hooks/useStreamSocket.js";
+import { useAuth } from "../auth/AuthProvider.js";
+import { canManageStreams } from "../shared/auth.js";
 
 const mediaStatusRefreshInterval = 5_000;
 
 interface StreamContentProps {
   stream: Stream;
+  playback: StreamPlayback | null;
   connection: StreamConnection | null;
+  canManage: boolean;
   connectionError: string | null;
   isFinishing: boolean;
   actionError: string | null;
@@ -52,7 +57,9 @@ function isAbortError(error: unknown): boolean {
 
 function StreamContent({
   stream,
+  playback,
   connection,
+  canManage,
   connectionError,
   isFinishing,
   actionError,
@@ -91,9 +98,9 @@ function StreamContent({
         </p>
       </header>
 
-      <StreamPlayer status={streamStatus} connection={connection} />
+      <StreamPlayer status={streamStatus} connection={playback} />
 
-      {connection && <StreamConnectionPanel connection={connection} />}
+      {canManage && connection && <StreamConnectionPanel connection={connection} />}
 
       {connectionError && (
         <p role="alert">
@@ -114,7 +121,7 @@ function StreamContent({
         onReaction={sendReaction}
       />
 
-      {streamStatus === "live" && (
+      {canManage && streamStatus === "live" && (
         <Button
           variant="danger"
           disabled={isFinishing}
@@ -137,11 +144,14 @@ function StreamContent({
 
 export function StreamPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const { streamId } = useParams<{
     streamId: string;
   }>();
+  const canManage = canManageStreams(user?.role);
 
   const [stream, setStream] = useState<Stream | null>(null);
+  const [playback, setPlayback] = useState<StreamPlayback | null>(null);
   const [connection, setConnection] = useState<StreamConnection | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [connectionErrorStreamId, setConnectionErrorStreamId] =
@@ -164,6 +174,7 @@ export function StreamPage() {
     async function loadStream(): Promise<void> {
       setIsLoading(true);
       setLoadError(null);
+      setPlayback(null);
       setConnection(null);
       setConnectionError(null);
       setConnectionErrorStreamId(null);
@@ -177,12 +188,22 @@ export function StreamPage() {
         setStream(loadedStream);
 
         try {
-          const streamConnection = await getStreamConnection(
-            currentStreamId,
-            abortController.signal,
-          );
+          if (canManage) {
+            const streamConnection = await getStreamConnection(
+              currentStreamId,
+              abortController.signal,
+            );
 
-          setConnection(streamConnection);
+            setConnection(streamConnection);
+            setPlayback(streamConnection);
+          } else {
+            const streamPlayback = await getStreamPlayback(
+              currentStreamId,
+              abortController.signal,
+            );
+
+            setPlayback(streamPlayback);
+          }
         } catch (error: unknown) {
           if (!isAbortError(error)) {
             setConnectionError(
@@ -209,7 +230,7 @@ export function StreamPage() {
     return () => {
       abortController.abort();
     };
-  }, [streamId, t]);
+  }, [canManage, streamId, t]);
 
   useEffect(() => {
     if (!streamId || stream?.id !== streamId || stream.status !== "live") {
@@ -222,16 +243,30 @@ export function StreamPage() {
 
     async function refreshMediaStatus(): Promise<void> {
       try {
-        const streamConnection = await getStreamConnection(
-          currentStreamId,
-          abortController.signal,
-        );
+        if (canManage) {
+          const streamConnection = await getStreamConnection(
+            currentStreamId,
+            abortController.signal,
+          );
 
-        if (!active) {
-          return;
+          if (!active) {
+            return;
+          }
+
+          setConnection(streamConnection);
+          setPlayback(streamConnection);
+        } else {
+          const streamPlayback = await getStreamPlayback(
+            currentStreamId,
+            abortController.signal,
+          );
+
+          if (!active) {
+            return;
+          }
+
+          setPlayback(streamPlayback);
         }
-
-        setConnection(streamConnection);
         setConnectionError(null);
         setConnectionErrorStreamId(null);
       } catch (error: unknown) {
@@ -255,7 +290,7 @@ export function StreamPage() {
       abortController.abort();
       window.clearInterval(intervalId);
     };
-  }, [stream?.id, stream?.status, streamId, t]);
+  }, [canManage, stream?.id, stream?.status, streamId, t]);
 
   const handleFinish = useCallback((): void => {
     if (!streamId || !window.confirm(t("streams.confirmFinish"))) {
@@ -310,6 +345,8 @@ export function StreamPage() {
     );
   }
 
+  const activePlayback =
+    playback?.streamId === stream.id ? playback : null;
   const activeConnection =
     connection?.streamId === stream.id ? connection : null;
   const activeConnectionError =
@@ -319,7 +356,9 @@ export function StreamPage() {
     <StreamContent
       key={`${stream.id}:${stream.status}`}
       stream={stream}
+      playback={activePlayback}
       connection={activeConnection}
+      canManage={canManage}
       connectionError={activeConnectionError}
       isFinishing={isFinishing}
       actionError={actionError}

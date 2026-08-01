@@ -1,4 +1,4 @@
-export type UserRole = "admin";
+export type UserRole = "admin" | "operator" | "viewer";
 
 export interface AuthUser {
   id: string;
@@ -20,4 +20,8 @@ export interface AuthResponse {
 export interface AuthCredentials {
   username: string;
   password: string;
+}
+
+export function canManageStreams(role: UserRole | undefined): boolean {
+  return role === "admin" || role === "operator";
 }

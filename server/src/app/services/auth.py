@@ -107,13 +107,27 @@ class AuthService:
         response.delete_cookie(self._cookie_name, path="/")
 
     async def require_admin(self, request: Request) -> AuthUser:
+        user = await self.require_user(request)
+        if user.role != "admin":
+            raise _forbidden_error()
+
+        return user
+
+    async def require_operator(self, request: Request) -> AuthUser:
+        user = await self.require_user(request)
+        if user.role not in {"admin", "operator"}:
+            raise _forbidden_error()
+
+        return user
+
+    async def require_user(self, request: Request) -> AuthUser:
         user = await self._get_user_from_token(request.cookies.get(self._cookie_name))
         if user is None:
             raise _unauthorized_error()
 
         return _to_auth_user(user)
 
-    async def require_websocket_admin(self, websocket: WebSocket) -> AuthUser:
+    async def require_websocket_user(self, websocket: WebSocket) -> AuthUser:
         user = await self._get_user_from_token(
             websocket.cookies.get(self._cookie_name),
         )
@@ -179,4 +193,12 @@ def _unauthorized_error() -> AppError:
         401,
         "AUTH_UNAUTHORIZED",
         "Authentication is required",
+    )
+
+
+def _forbidden_error() -> AppError:
+    return AppError(
+        403,
+        "AUTH_FORBIDDEN",
+        "The current account does not have permission for this action",
     )

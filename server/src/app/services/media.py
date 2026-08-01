@@ -4,7 +4,7 @@ from urllib.parse import quote, urlencode
 import httpx
 
 from app.core.errors import AppError
-from app.schemas.media import MediaPathStatus, StreamConnection
+from app.schemas.media import MediaPathStatus, StreamConnection, StreamPlayback
 from app.services.media_auth import MediaTokenService
 
 logger = logging.getLogger(__name__)
@@ -148,15 +148,32 @@ class MediaConnectionService:
     ) -> StreamConnection:
         encoded_stream_key = quote(stream_key, safe="")
         publish_token = self._token_service.create(stream_key, "publish")
-        read_token = self._token_service.create(stream_key, "read")
+        playback = self.get_playback(stream_id, stream_key, path_status)
         publish_query = urlencode({"user": "publisher", "pass": publish_token})
-        read_query = urlencode({"user": "viewer", "pass": read_token})
 
         return StreamConnection(
             streamId=stream_id,
             rtmpUrl=self._rtmp_url,
             rtmpPublishUrl=f"{self._rtmp_url}/{encoded_stream_key}?{publish_query}",
             streamKey=stream_key,
+            hlsUrl=playback.hls_url,
+            webrtcUrl=playback.webrtc_url,
+            sourceStatus=playback.source_status,
+            sourceProtocol=playback.source_protocol,
+        )
+
+    def get_playback(
+        self,
+        stream_id: str,
+        stream_key: str,
+        path_status: MediaPathStatus,
+    ) -> StreamPlayback:
+        encoded_stream_key = quote(stream_key, safe="")
+        read_token = self._token_service.create(stream_key, "read")
+        read_query = urlencode({"user": "viewer", "pass": read_token})
+
+        return StreamPlayback(
+            streamId=stream_id,
             hlsUrl=f"{self._hls_url}/{encoded_stream_key}/index.m3u8?{read_query}",
             webrtcUrl=f"{self._webrtc_url}/{encoded_stream_key}?{read_query}",
             sourceStatus=path_status.source_status,

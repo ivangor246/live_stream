@@ -13,7 +13,7 @@ def register_websocket_route(
     @application.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket) -> None:
         try:
-            await auth_service.require_websocket_admin(websocket)
+            await auth_service.require_websocket_user(websocket)
         except AppError:
             await websocket.close(code=1008)
             return

@@ -5,13 +5,13 @@ import {
 } from "react";
 
 import type Hls from "hls.js";
-import type { StreamConnection } from "../shared/api.js";
+import type { StreamPlayback } from "../shared/api.js";
 import type { StreamStatus } from "../shared/stream.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 
 interface StreamPlayerProps {
   status: StreamStatus;
-  connection: StreamConnection | null;
+  connection: StreamPlayback | null;
 }
 
 type PlayerMode =

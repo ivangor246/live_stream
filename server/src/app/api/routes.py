@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from app.core.errors import AppError
 from app.database.session import check_database_connection
 from app.schemas.api import HealthResponse, ReadinessResponse
-from app.schemas.media import StreamConnection
+from app.schemas.media import StreamConnection, StreamPlayback
 from app.schemas.stream import CreateStreamRequest, Stream
 from app.services.auth import AuthService
 from app.services.media import MediaConnectionService, MediaStatusService
@@ -40,10 +40,30 @@ def create_api_router(
 
         return ReadinessResponse(status="ok", database="ok")
 
+    _register_stream_read_routes(
+        router,
+        streams_service,
+        media_connection_service,
+        media_status_service,
+        auth_service,
+    )
+    _register_stream_management_routes(router, streams_service, auth_service)
+
+    return router
+
+
+def _register_stream_read_routes(
+    router: APIRouter,
+    streams_service: StreamsService,
+    media_connection_service: MediaConnectionService,
+    media_status_service: MediaStatusService,
+    auth_service: AuthService,
+) -> None:
+
     @router.get(
         "/streams",
         response_model=list[Stream],
-        dependencies=[Depends(auth_service.require_admin)],
+        dependencies=[Depends(auth_service.require_user)],
     )
     async def get_streams() -> list[Stream]:
         return await streams_service.get_streams()
@@ -51,7 +71,7 @@ def create_api_router(
     @router.get(
         "/streams/{stream_id}",
         response_model=Stream,
-        dependencies=[Depends(auth_service.require_admin)],
+        dependencies=[Depends(auth_service.require_user)],
     )
     async def get_stream(stream_id: str) -> Stream:
         return await streams_service.get_stream(stream_id)
@@ -59,7 +79,7 @@ def create_api_router(
     @router.get(
         "/streams/{stream_id}/connection",
         response_model=StreamConnection,
-        dependencies=[Depends(auth_service.require_admin)],
+        dependencies=[Depends(auth_service.require_operator)],
     )
     async def get_stream_connection(stream_id: str) -> StreamConnection:
         await streams_service.get_stream(stream_id)
@@ -71,11 +91,33 @@ def create_api_router(
             path_status,
         )
 
+    @router.get(
+        "/streams/{stream_id}/playback",
+        response_model=StreamPlayback,
+        dependencies=[Depends(auth_service.require_user)],
+    )
+    async def get_stream_playback(stream_id: str) -> StreamPlayback:
+        await streams_service.get_stream(stream_id)
+        stream_key = await streams_service.get_stream_key(stream_id)
+        path_status = await media_status_service.get_path_status(stream_key)
+        return media_connection_service.get_playback(
+            stream_id,
+            stream_key,
+            path_status,
+        )
+
+
+def _register_stream_management_routes(
+    router: APIRouter,
+    streams_service: StreamsService,
+    auth_service: AuthService,
+) -> None:
+
     @router.post(
         "/streams",
         response_model=Stream,
         status_code=status.HTTP_201_CREATED,
-        dependencies=[Depends(auth_service.require_admin)],
+        dependencies=[Depends(auth_service.require_operator)],
     )
     async def create_stream(request: CreateStreamRequest) -> Stream:
         return await streams_service.create_stream(request.title)
@@ -83,7 +125,7 @@ def create_api_router(
     @router.post(
         "/streams/{stream_id}/start",
         response_model=Stream,
-        dependencies=[Depends(auth_service.require_admin)],
+        dependencies=[Depends(auth_service.require_operator)],
     )
     async def start_stream(stream_id: str) -> Stream:
         return await streams_service.start_stream(stream_id)
@@ -91,9 +133,7 @@ def create_api_router(
     @router.post(
         "/streams/{stream_id}/finish",
         response_model=Stream,
-        dependencies=[Depends(auth_service.require_admin)],
+        dependencies=[Depends(auth_service.require_operator)],
     )
     async def finish_stream(stream_id: str) -> Stream:
         return await streams_service.finish_stream(stream_id)
-
-    return router

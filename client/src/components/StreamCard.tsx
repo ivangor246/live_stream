@@ -7,6 +7,7 @@ import { StatusBadge } from "./ui/StatusBadge.js";
 
 interface StreamCardProps {
   stream: Stream;
+  canManage: boolean;
   isUpdating: boolean;
   onStart: (streamId: string) => void;
   onFinish: (streamId: string) => void;
@@ -20,6 +21,7 @@ const statusKeys: Record<StreamStatus, TranslationKey> = {
 
 export function StreamCard({
   stream,
+  canManage,
   isUpdating,
   onStart,
   onFinish,
@@ -55,7 +57,7 @@ export function StreamCard({
           {t("streams.open")}
         </ButtonLink>
 
-        {stream.status === "scheduled" && (
+        {canManage && stream.status === "scheduled" && (
           <Button
             variant="primary"
             disabled={isUpdating}
@@ -67,7 +69,7 @@ export function StreamCard({
           </Button>
         )}
 
-        {stream.status === "live" && (
+        {canManage && stream.status === "live" && (
           <Button
             variant="danger"
             disabled={isUpdating}

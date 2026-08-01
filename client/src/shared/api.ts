@@ -7,15 +7,18 @@ export interface ReadinessResponse {
 
 export type MediaSourceStatus = "online" | "offline" | "unavailable";
 
-export interface StreamConnection {
+export interface StreamPlayback {
   streamId: string;
-  rtmpUrl: string;
-  rtmpPublishUrl: string;
-  streamKey: string;
   hlsUrl: string;
   webrtcUrl: string;
   sourceStatus: MediaSourceStatus;
   sourceProtocol: string | null;
+}
+
+export interface StreamConnection extends StreamPlayback {
+  rtmpUrl: string;
+  rtmpPublishUrl: string;
+  streamKey: string;
 }
 
 export type CreateStreamRequest = Pick<Stream, "title">;

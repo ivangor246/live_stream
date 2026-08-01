@@ -6,12 +6,17 @@ import type {
   AuthCredentials,
   AuthResponse,
   AuthStatus,
+  UserRole,
 } from "../shared/auth.js";
 
 type ResponseValidator<T> = (value: unknown) => value is T;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isUserRole(value: unknown): value is UserRole {
+  return value === "admin" || value === "operator" || value === "viewer";
 }
 
 function isAuthUser(value: unknown): boolean {
@@ -22,7 +27,7 @@ function isAuthUser(value: unknown): boolean {
   return (
     typeof value.id === "string" &&
     typeof value.username === "string" &&
-    value.role === "admin" &&
+    isUserRole(value.role) &&
     typeof value.createdAt === "string"
   );
 }

@@ -17,6 +17,8 @@ import {
 } from "../components/StreamFilters.js";
 import { StreamCard } from "../components/StreamCard.js";
 import { Button } from "../components/ui/Button.js";
+import { useAuth } from "../auth/AuthProvider.js";
+import { canManageStreams } from "../shared/auth.js";
 
 type StreamStatusAction = (streamId: string) => Promise<Stream>;
 
@@ -26,6 +28,8 @@ function isAbortError(error: unknown): boolean {
 
 export function StreamsPage() {
   const { locale, t } = useI18n();
+  const { user } = useAuth();
+  const canManage = canManageStreams(user?.role);
   const [streams, setStreams] = useState<Stream[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -139,7 +143,7 @@ export function StreamsPage() {
         <p>{t("app.description")}</p>
       </header>
 
-      <CreateStreamForm onCreate={handleCreate} />
+      {canManage && <CreateStreamForm onCreate={handleCreate} />}
 
       <section className="streams-section">
         <header className="streams-section__header">
@@ -204,6 +208,7 @@ export function StreamsPage() {
                   <StreamCard
                     key={stream.id}
                     stream={stream}
+                    canManage={canManage}
                     isUpdating={updatingStreamId === stream.id}
                     onStart={handleStart}
                     onFinish={handleFinish}
