@@ -18,6 +18,8 @@ The current release provides:
 - a first-run empty state and confirmation for finishing streams;
 - a MediaMTX service with RTMP publishing and HLS/WebRTC connection details;
 - an embedded WebRTC player with automatic HLS fallback;
+- first-run local administrator setup with cookie-based sessions;
+- protected stream management and dashboard WebSocket access;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
@@ -25,8 +27,9 @@ The current release provides:
 
 The dashboard prepares MediaMTX connection details and an embedded player for
 each live stream. It also polls the MediaMTX Control API and displays the
-current source status; access control is still planned. The player prefers
-WebRTC and falls back to HLS.
+current source status. Dashboard access is protected by a local administrator
+session, while MediaMTX media-path access control is still planned. The player
+prefers WebRTC and falls back to HLS.
 
 ## Technology
 
@@ -62,6 +65,7 @@ WebRTC and falls back to HLS.
 client/
   src/
     api/              typed HTTP client
+    auth/             administrator session state and route guards
     components/       reusable feature and layout components
       layout/         application header and preference controls
       ui/              local visual component library
@@ -73,12 +77,12 @@ client/
 
 server/
   src/app/
-    api/              REST and WebSocket transport
+    api/              REST, authentication, and WebSocket transport
     core/              configuration and error handlers
     database/          SQLAlchemy base, models, and sessions
-    repositories/     PostgreSQL data access
-    schemas/          Pydantic schemas
-    services/         stream, WebSocket, and media business services
+    repositories/     PostgreSQL data access, including auth sessions
+    schemas/          Pydantic schemas for API and authentication
+    services/         auth, stream, WebSocket, and media business services
   migrations/         Alembic migrations
   pyproject.toml      Poetry project with the app package
   poetry.lock         locked backend dependencies
@@ -125,6 +129,29 @@ make docker-down
 
 The `postgres-data` Docker volume is kept by default. Set a strong
 `POSTGRES_PASSWORD` before exposing the installation beyond a local network.
+
+On the first visit, the dashboard asks you to create a local administrator
+account. Use a password with at least 12 characters. Later visits show the
+sign-in form; the session is stored in an HttpOnly cookie and lasts 14 days by
+default.
+
+## Authentication
+
+The first setup endpoint is available only while the PostgreSQL database has no
+users. After setup, stream management endpoints and the dashboard WebSocket
+require the administrator session. Health and database readiness endpoints
+remain public so Docker and reverse proxies can check the service.
+
+For an HTTPS deployment, enable secure cookies in the root `.env` file:
+
+```dotenv
+AUTH_SECURE_COOKIE=true
+AUTH_SESSION_TTL_DAYS=14
+```
+
+Keep `AUTH_SECURE_COOKIE=false` for plain HTTP local development. The current
+release supports one local administrator account; separate operator/viewer
+roles and invitation links are planned.
 
 ## Local development
 
@@ -207,12 +234,16 @@ Run `make help` for the full list:
 | --- | --- | --- |
 | `GET` | `/api/health` | Check that the backend process is running |
 | `GET` | `/api/ready` | Check that the backend can access PostgreSQL |
-| `GET` | `/api/streams` | Get all streams |
-| `GET` | `/api/streams/{streamId}` | Get one stream |
-| `GET` | `/api/streams/{streamId}/connection` | Get RTMP, HLS, and WebRTC connection details |
-| `POST` | `/api/streams` | Create a stream |
-| `POST` | `/api/streams/{streamId}/start` | Start a scheduled stream |
-| `POST` | `/api/streams/{streamId}/finish` | Finish a live stream |
+| `GET` | `/api/auth/status` | Check setup and session status |
+| `POST` | `/api/auth/setup` | Create the first administrator account |
+| `POST` | `/api/auth/login` | Start an administrator session |
+| `POST` | `/api/auth/logout` | End the current session |
+| `GET` | `/api/streams` | Get all streams (administrator session required) |
+| `GET` | `/api/streams/{streamId}` | Get one stream (administrator session required) |
+| `GET` | `/api/streams/{streamId}/connection` | Get connection details (administrator session required) |
+| `POST` | `/api/streams` | Create a stream (administrator session required) |
+| `POST` | `/api/streams/{streamId}/start` | Start a scheduled stream (administrator session required) |
+| `POST` | `/api/streams/{streamId}/finish` | Finish a live stream (administrator session required) |
 
 The connection response includes `sourceStatus` (`online`, `offline`, or
 `unavailable`) and the detected `sourceProtocol` when MediaMTX has an active
@@ -257,7 +288,7 @@ For protocol-specific setup, see the [MediaMTX OBS guide](https://mediamtx.org/d
 
 ## WebSocket API
 
-Connect to:
+Connect to the dashboard WebSocket with the administrator session:
 
 ```text
 ws://localhost:3000/ws
@@ -316,9 +347,10 @@ page-specific styling.
 
 ## Current limitations
 
-- no authentication or role separation;
+- one local administrator account only; no operator/viewer role separation;
 - no source-state history, alerts, or automatic stream lifecycle changes;
-- stream keys are currently predictable UUIDs and have no access control;
+- MediaMTX media paths are not protected by application authentication;
+- stream keys are currently predictable UUIDs;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
 - no automated PostgreSQL backup or retention policy;
