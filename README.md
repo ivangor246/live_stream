@@ -16,14 +16,15 @@ The current release provides:
 - a backend and database status indicator in the dashboard;
 - stream status filters and sorting;
 - a first-run empty state and confirmation for finishing streams;
+- a MediaMTX service with RTMP publishing and HLS/WebRTC connection details;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
-- separate frontend, backend, and PostgreSQL Docker services.
+- separate frontend, backend, PostgreSQL, and MediaMTX Docker services.
 
-Video ingestion and playback are not implemented yet. The stream page currently
-contains a player placeholder. Media transport is planned as a separate
-integration with a dedicated media server.
+The dashboard prepares MediaMTX connection details for each stream. An in-page
+video player and source-state synchronization are still planned, while the
+current release provides direct HLS and WebRTC links.
 
 ## Technology
 
@@ -47,6 +48,10 @@ integration with a dedicated media server.
 - Alembic;
 - PostgreSQL.
 
+### Media
+
+- MediaMTX for RTMP publishing and HLS/WebRTC delivery.
+
 ## Repository structure
 
 ```text
@@ -69,14 +74,15 @@ server/
     database/          SQLAlchemy base, models, and sessions
     repositories/     PostgreSQL data access
     schemas/          Pydantic schemas
-    services/         stream and WebSocket business services
+    services/         stream, WebSocket, and media business services
   migrations/         Alembic migrations
   pyproject.toml      Poetry project with the app package
   poetry.lock         locked backend dependencies
+  mediamtx.yml        MediaMTX protocol configuration
 
 client/Dockerfile     frontend build and Nginx image
 server/Dockerfile     Python 3.13 backend image
-docker-compose.yml    frontend, backend, and PostgreSQL services
+docker-compose.yml    frontend, backend, PostgreSQL, and MediaMTX services
 Makefile              common local and Docker commands
 ```
 
@@ -92,8 +98,8 @@ Docker Compose is the recommended way to run the project:
 make docker-up
 ```
 
-The command builds the frontend and backend, starts PostgreSQL, applies pending
-Alembic migrations, and starts the application. Open
+The command builds the frontend and backend, starts PostgreSQL and MediaMTX,
+applies pending Alembic migrations, and starts the application. Open
 `http://localhost:8080` in a browser.
 
 Default endpoints:
@@ -101,7 +107,10 @@ Default endpoints:
 - frontend: `http://localhost:8080`;
 - backend: `http://localhost:3000`;
 - API documentation: `http://localhost:3000/docs`;
-- PostgreSQL: `localhost:5432`.
+- PostgreSQL: `localhost:5432`;
+- MediaMTX RTMP: `localhost:1935`;
+- MediaMTX HLS: `http://localhost:8888`;
+- MediaMTX WebRTC: `http://localhost:8889`.
 
 Stop the containers without deleting PostgreSQL data:
 
@@ -129,6 +138,7 @@ Install dependencies and prepare the local environment:
 cp server/.env.example server/.env
 make install
 make db-up
+make media-up
 ```
 
 Start the backend and frontend in separate terminals:
@@ -153,6 +163,12 @@ To stop only the local database:
 make db-down
 ```
 
+To stop the local media server:
+
+```bash
+make media-down
+```
+
 For a custom PostgreSQL connection, set `DATABASE_URL` in `server/.env`. For
 Docker Compose, set the corresponding variables in a root `.env` file and use
 the Docker service hostname when the database runs inside Compose.
@@ -169,6 +185,8 @@ Run `make help` for the full list:
 | `make db-up` | Start the local PostgreSQL container |
 | `make db-down` | Stop the local PostgreSQL container |
 | `make db-migrate` | Apply PostgreSQL migrations manually |
+| `make media-up` | Start the local MediaMTX service |
+| `make media-down` | Stop the local MediaMTX service |
 | `make lint` | Run frontend ESLint and backend Ruff checks |
 | `make build` | Build the frontend for production |
 | `make backend-check` | Compile-check and import-check the backend |
@@ -185,6 +203,7 @@ Run `make help` for the full list:
 | `GET` | `/api/ready` | Check that the backend can access PostgreSQL |
 | `GET` | `/api/streams` | Get all streams |
 | `GET` | `/api/streams/{streamId}` | Get one stream |
+| `GET` | `/api/streams/{streamId}/connection` | Get RTMP, HLS, and WebRTC connection details |
 | `POST` | `/api/streams` | Create a stream |
 | `POST` | `/api/streams/{streamId}/start` | Start a scheduled stream |
 | `POST` | `/api/streams/{streamId}/finish` | Finish a live stream |
@@ -211,6 +230,18 @@ The API returns stream fields in the frontend contract format:
   "finishedAt": null
 }
 ```
+
+## Media workflow
+
+1. Create a stream in the dashboard.
+2. Copy the RTMP URL and stream key from the stream page into OBS as a custom
+   RTMP server. The current stream key is the stream UUID.
+3. Publish the stream. MediaMTX creates the path from the stream key and makes
+   the HLS and WebRTC links available in the same panel.
+
+For protocol-specific setup, see the [MediaMTX OBS guide](https://mediamtx.org/docs/publish/obs-studio),
+[HLS guide](https://mediamtx.org/docs/read/hls), and
+[WebRTC guide](https://mediamtx.org/docs/read/webrtc).
 
 ## WebSocket API
 
@@ -274,8 +305,8 @@ page-specific styling.
 ## Current limitations
 
 - no authentication or role separation;
-- no video ingestion or playback;
-- no MediaMTX integration yet;
+- no in-page video player or source-state synchronization;
+- stream keys are currently predictable UUIDs and have no access control;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
 - no automated PostgreSQL backup or retention policy;
