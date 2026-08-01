@@ -172,7 +172,7 @@ export function StreamPage() {
   }, [streamId, t]);
 
   const handleFinish = useCallback((): void => {
-    if (!streamId) {
+    if (!streamId || !window.confirm(t("streams.confirmFinish"))) {
       return;
     }
 

@@ -122,9 +122,13 @@ export function StreamsPage() {
 
   const handleFinish = useCallback(
     (streamId: string): void => {
+      if (!window.confirm(t("streams.confirmFinish"))) {
+        return;
+      }
+
       void updateStreamStatus(streamId, finishStream);
     },
-    [updateStreamStatus],
+    [t, updateStreamStatus],
   );
 
   return (
