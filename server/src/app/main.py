@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import create_api_router
+from app.api.media import create_media_router
 from app.api.websocket import register_websocket_route
 from app.core.config import settings
 from app.core.handlers import register_exception_handlers
@@ -18,6 +19,7 @@ from app.services.media import (
     MediaPathService,
     MediaStatusService,
 )
+from app.services.media_auth import MediaAuthService, MediaTokenService
 from app.services.streams import StreamsService
 from app.services.websocket import WebSocketManager
 
@@ -35,7 +37,15 @@ def create_app() -> FastAPI:
         api_url=settings.media_api_url,
         timeout=settings.media_api_timeout,
     )
+    media_token_service = MediaTokenService(
+        secret=settings.media_auth_secret,
+        ttl_seconds=settings.media_auth_token_ttl_seconds,
+    )
     streams_service = StreamsService(streams_repository, media_path_service)
+    media_auth_service = MediaAuthService(
+        streams_repository,
+        media_token_service,
+    )
     auth_service = AuthService(
         repository=auth_repository,
         cookie_name=settings.auth_cookie_name,
@@ -46,6 +56,7 @@ def create_app() -> FastAPI:
         rtmp_url=settings.media_rtmp_url,
         hls_url=settings.media_hls_url,
         webrtc_url=settings.media_webrtc_url,
+        token_service=media_token_service,
     )
     media_status_service = MediaStatusService(
         api_url=settings.media_api_url,
@@ -83,6 +94,7 @@ def create_app() -> FastAPI:
             auth_service,
         ),
     )
+    application.include_router(create_media_router(media_auth_service), prefix="/api")
     register_websocket_route(application, websocket_manager, auth_service)
 
     return application

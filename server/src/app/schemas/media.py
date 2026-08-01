@@ -3,6 +3,22 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 MediaSourceStatus = Literal["online", "offline", "unavailable"]
+MediaAuthAction = Literal["publish", "read", "playback", "api", "metrics", "pprof"]
+
+
+class MediaAuthRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    user: str = ""
+    password: str = ""
+    token: str = ""
+    ip: str = ""
+    action: MediaAuthAction
+    path: str = ""
+    protocol: str = ""
+    id: str = ""
+    query: str = ""
+    user_agent: str = Field(default="", alias="userAgent")
 
 
 class MediaPathStatus(BaseModel):
@@ -17,6 +33,7 @@ class StreamConnection(BaseModel):
 
     stream_id: str = Field(alias="streamId")
     rtmp_url: str = Field(alias="rtmpUrl")
+    rtmp_publish_url: str = Field(alias="rtmpPublishUrl")
     stream_key: str = Field(alias="streamKey")
     hls_url: str = Field(alias="hlsUrl")
     webrtc_url: str = Field(alias="webrtcUrl")

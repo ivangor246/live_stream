@@ -10,6 +10,7 @@ export type MediaSourceStatus = "online" | "offline" | "unavailable";
 export interface StreamConnection {
   streamId: string;
   rtmpUrl: string;
+  rtmpPublishUrl: string;
   streamKey: string;
   hlsUrl: string;
   webrtcUrl: string;

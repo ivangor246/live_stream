@@ -29,7 +29,40 @@ const playerMessages: Record<StreamStatus, TranslationKey> = {
 };
 
 function getWhepUrl(webrtcUrl: string): string {
-  return `${webrtcUrl.replace(/\/+$/, "")}/whep`;
+  const [baseUrl = ""] = webrtcUrl.split("?", 2);
+  const whepPath = `${baseUrl.replace(/\/+$/, "")}/whep`;
+
+  return whepPath;
+}
+
+function getMediaUrlWithoutCredentials(mediaUrl: string): string {
+  try {
+    const url = new URL(mediaUrl, window.location.origin);
+
+    for (const parameter of ["user", "pass", "token"]) {
+      url.searchParams.delete(parameter);
+    }
+
+    return url.toString();
+  } catch {
+    return mediaUrl;
+  }
+}
+
+function getAuthorizationHeader(mediaUrl: string): string | null {
+  try {
+    const url = new URL(mediaUrl, window.location.origin);
+    const username = url.searchParams.get("user");
+    const password = url.searchParams.get("pass");
+
+    if (!username || !password) {
+      return null;
+    }
+
+    return `Basic ${window.btoa(`${username}:${password}`)}`;
+  } catch {
+    return null;
+  }
 }
 
 function waitForIceGathering(peerConnection: RTCPeerConnection): Promise<void> {
@@ -93,10 +126,12 @@ async function connectWebRtc(
       throw new Error("WebRTC offer was not created");
     }
 
+    const authorization = getAuthorizationHeader(webrtcUrl);
     const response = await fetch(getWhepUrl(webrtcUrl), {
       method: "POST",
       headers: {
         "Content-Type": "application/sdp",
+        ...(authorization ? { Authorization: authorization } : {}),
       },
       body: localDescription.sdp,
       signal,
@@ -196,9 +231,11 @@ export function StreamPlayer({
     }
 
     const streamHlsUrl = hlsUrl;
+    const hlsSourceUrl = getMediaUrlWithoutCredentials(streamHlsUrl);
     const playerVideo = video;
     let active = true;
     let hls: Hls | null = null;
+    const authorization = getAuthorizationHeader(streamHlsUrl);
 
     playerVideo.srcObject = null;
 
@@ -210,7 +247,15 @@ export function StreamPlayer({
       }
 
       const HlsPlayer = hlsModule.default;
-      hls = HlsPlayer.isSupported() ? new HlsPlayer() : null;
+      hls = HlsPlayer.isSupported()
+        ? new HlsPlayer({
+            xhrSetup: (xhr) => {
+              if (authorization) {
+                xhr.setRequestHeader("Authorization", authorization);
+              }
+            },
+          })
+        : null;
 
       if (hls) {
         hls.on(HlsPlayer.Events.ERROR, (_event, data) => {
@@ -220,7 +265,7 @@ export function StreamPlayer({
         });
         hls.on(HlsPlayer.Events.MEDIA_ATTACHED, () => {
           if (active) {
-            hls?.loadSource(streamHlsUrl);
+            hls?.loadSource(hlsSourceUrl);
           }
         });
         hls.attachMedia(playerVideo);

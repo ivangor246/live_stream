@@ -84,6 +84,7 @@ function isStreamConnection(value: unknown): value is StreamConnection {
   return (
     typeof value.streamId === "string" &&
     typeof value.rtmpUrl === "string" &&
+    typeof value.rtmpPublishUrl === "string" &&
     typeof value.streamKey === "string" &&
     typeof value.hlsUrl === "string" &&
     typeof value.webrtcUrl === "string" &&

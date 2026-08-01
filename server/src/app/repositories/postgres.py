@@ -48,6 +48,13 @@ class PostgresStreamsRepository:
         async with self._session_factory() as session:
             return await session.scalar(query)
 
+    async def find_by_stream_key(self, stream_key: str) -> Stream | None:
+        query = select(StreamRecord).where(StreamRecord.stream_key == stream_key)
+
+        async with self._session_factory() as session:
+            record = await session.scalar(query)
+            return _to_stream(record) if record else None
+
     async def create(self, title: str, stream_key: str) -> Stream:
         record = StreamRecord(
             id=str(uuid4()),

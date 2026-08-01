@@ -2,20 +2,11 @@
 api: yes
 apiAddress: 0.0.0.0:9997
 
-# Allow the backend to query the internal Control API.
-authInternalUsers:
-  - user: any
-    pass:
-    ips: []
-    permissions:
-      - action: publish
-        path:
-      - action: read
-        path:
-      - action: playback
-        path:
-      - action: api
-        path:
+# Delegate media authentication to the backend.
+authMethod: http
+authHTTPAddress: http://backend:3000/api/media/auth
+authHTTPExclude:
+  - action: api
 
 rtmp: yes
 rtmpAddress: :1935

@@ -42,6 +42,10 @@ export function StreamConnectionPanel({
 
       <div className="stream-connection__fields">
         <CopyField label={t("stream.rtmpUrl")} value={connection.rtmpUrl} />
+        <CopyField
+          label={t("stream.rtmpPublishUrl")}
+          value={connection.rtmpPublishUrl}
+        />
         <CopyField label={t("stream.streamKey")} value={connection.streamKey} />
         <CopyField label={t("stream.hlsUrl")} value={connection.hlsUrl} />
         <CopyField label={t("stream.webrtcUrl")} value={connection.webrtcUrl} />

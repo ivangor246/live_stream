@@ -42,7 +42,7 @@ db-migrate:
 	cd server && $(POETRY) run alembic upgrade head
 
 media-up:
-	docker compose up -d mediamtx
+	MEDIA_AUTH_URL=$${MEDIA_AUTH_URL:-http://host.docker.internal:3000/api/media/auth} docker compose up -d mediamtx
 
 media-down:
 	docker compose stop mediamtx
