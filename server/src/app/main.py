@@ -47,7 +47,7 @@ def create_app() -> FastAPI:
     )
 
     register_exception_handlers(application)
-    application.include_router(create_api_router(streams_service))
+    application.include_router(create_api_router(streams_service, database_engine))
     register_websocket_route(application, websocket_manager)
 
     return application

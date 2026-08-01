@@ -7,6 +7,11 @@ class HealthResponse(BaseModel):
     status: Literal["ok"]
 
 
+class ReadinessResponse(BaseModel):
+    status: Literal["ok"]
+    database: Literal["ok"]
+
+
 class ErrorPayload(BaseModel):
     code: str
     message: str
