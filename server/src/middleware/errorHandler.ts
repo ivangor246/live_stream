@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import type { ApiErrorResponse } from "../../../shared/api.js";
+import type { ApiErrorResponse } from "../contracts/api.js";
 import { AppError } from "../errors/AppError.js";
 
 export function errorHandler(

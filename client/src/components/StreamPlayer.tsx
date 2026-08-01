@@ -1,4 +1,4 @@
-import type { StreamStatus } from "../../../shared/stream.js";
+import type { StreamStatus } from "../shared/stream.js";
 
 interface StreamPlayerProps {
   status: StreamStatus;

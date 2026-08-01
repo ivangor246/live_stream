@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { Stream } from "../../../shared/stream.js";
+import type { Stream } from "../contracts/stream.js";
 
 export interface StreamsRepository {
   findAll(): Stream[];

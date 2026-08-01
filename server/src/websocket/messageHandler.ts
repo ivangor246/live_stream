@@ -7,7 +7,7 @@ import type { StreamsService } from "../services/streamsService.js";
 import type {
   ClientWebSocketMessage,
   ServerWebSocketMessage,
-} from "../../../shared/websocket.js";
+} from "../contracts/websocket.js";
 
 export interface ConnectionContext {
   viewerId: string | null;

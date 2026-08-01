@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { Stream } from "../../../shared/stream.js";
+import type { Stream } from "../shared/stream.js";
 import {
   createStream as createStreamRequest,
   finishStream,

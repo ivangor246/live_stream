@@ -8,12 +8,12 @@ import {
 
 import type {
   StreamStatus,
-} from "../../../shared/stream.js";
+} from "../shared/stream.js";
 import type {
   ClientWebSocketMessage,
   ReactionType,
   ServerWebSocketMessage,
-} from "../../../shared/websocket.js";
+} from "../shared/websocket.js";
 import type { SocketConnectionStatus } from "../types/websocket.js";
 
 export interface UseStreamSocketResult {

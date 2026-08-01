@@ -5,9 +5,9 @@ import type {
   CreateStreamResponse,
   GetStreamResponse,
   GetStreamsResponse,
-} from "../../../shared/api.js";
+} from "../shared/api.js";
 
-import type { Stream, StreamStatus } from "../../../shared/stream.js";
+import type { Stream, StreamStatus } from "../shared/stream.js";
 
 type ResponseValidator<T> = (value: unknown) => value is T;
 

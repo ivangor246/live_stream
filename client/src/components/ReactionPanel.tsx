@@ -1,4 +1,4 @@
-import type { ReactionType } from "../../../shared/websocket.js";
+import type { ReactionType } from "../shared/websocket.js";
 
 interface ReactionPanelProps {
   disabled: boolean;

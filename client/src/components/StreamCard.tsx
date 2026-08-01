@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import type { Stream, StreamStatus } from "../../../shared/stream.js";
+import type { Stream, StreamStatus } from "../shared/stream.js";
 
 interface StreamCardProps {
   stream: Stream;

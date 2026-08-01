@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 
-import type { CreateStreamRequest } from "../../../shared/api.js";
+import type { CreateStreamRequest } from "../contracts/api.js";
 import { AppError } from "../errors/AppError.js";
 import type { StreamsService } from "../services/streamsService.js";
 import { title } from "node:process";

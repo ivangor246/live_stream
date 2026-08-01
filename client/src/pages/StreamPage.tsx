@@ -8,7 +8,7 @@ import { Link, useParams } from "react-router-dom";
 import type {
   Stream,
   StreamStatus,
-} from "../../../shared/stream.js";
+} from "../shared/stream.js";
 import {
   finishStream,
   getStream,

@@ -1,7 +1,7 @@
-import type { Stream } from "../../../shared/stream.js";
+import type { Stream } from "../contracts/stream.js";
 import { AppError } from "../errors/AppError.js";
 import type { StreamsRepository } from "../repositories/streamsRepository.js";
-import type { ReactionType } from "../../../shared/websocket.js";
+import type { ReactionType } from "../contracts/websocket.js";
 
 type StatusUpdateListener = (stream: Stream) => void;
 

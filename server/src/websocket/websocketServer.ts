@@ -1,7 +1,7 @@
 import type { Server } from "node:http";
 import WebSocket, { WebSocketServer } from "ws";
 
-import type { ServerWebSocketMessage } from "../../../shared/websocket.js";
+import type { ServerWebSocketMessage } from "../contracts/websocket.js";
 import type { StreamsService } from "../services/streamsService.js";
 import {
   type BroadcastToStream,
