@@ -10,7 +10,7 @@ help:
 		'make install          Install frontend and backend dependencies' \
 		'make dev-frontend     Start the Vite development server' \
 		'make dev-backend      Start the FastAPI development server' \
-		'make lint             Run frontend lint checks' \
+		'make lint             Run frontend and backend lint checks' \
 		'make build            Build the frontend' \
 		'make backend-check    Compile-check the backend' \
 		'make docker-build     Build both Docker images' \
