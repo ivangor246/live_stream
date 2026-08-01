@@ -12,9 +12,12 @@ RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 COPY pyproject.toml poetry.lock ./
 COPY src ./src
+COPY migrations ./migrations
+COPY alembic.ini docker-entrypoint.sh ./
 
 RUN poetry install --only main --no-ansi
+RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

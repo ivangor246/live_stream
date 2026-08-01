@@ -137,7 +137,7 @@ class WebSocketManager:
                 "Connection has already joined another stream",
             )
 
-        stream = self._streams_service.add_viewer(stream_id, viewer_id)
+        stream = await self._streams_service.add_viewer(stream_id, viewer_id)
         context.stream_id = stream_id
         context.viewer_id = viewer_id
 
@@ -167,7 +167,7 @@ class WebSocketManager:
                 "Reaction does not match the connected viewer",
             )
 
-        stream = self._streams_service.add_reaction(
+        stream = await self._streams_service.add_reaction(
             stream_id,
             viewer_id,
             message.payload.reaction,
@@ -242,7 +242,7 @@ class WebSocketManager:
         if viewer_still_connected:
             return
 
-        stream = self._streams_service.remove_viewer(
+        stream = await self._streams_service.remove_viewer(
             context.stream_id,
             context.viewer_id,
         )

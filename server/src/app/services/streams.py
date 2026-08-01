@@ -26,22 +26,22 @@ class StreamsService:
         for listener in tuple(self._status_update_listeners):
             listener(stream)
 
-    def get_streams(self) -> list[Stream]:
-        return self._streams_repository.find_all()
+    async def get_streams(self) -> list[Stream]:
+        return await self._streams_repository.find_all()
 
-    def get_stream(self, stream_id: str) -> Stream:
-        stream = self._streams_repository.find_by_id(stream_id)
+    async def get_stream(self, stream_id: str) -> Stream:
+        stream = await self._streams_repository.find_by_id(stream_id)
 
         if not stream:
             raise AppError(404, "STREAM_NOT_FOUND", "Stream was not found")
 
         return stream
 
-    def create_stream(self, title: str) -> Stream:
-        return self._streams_repository.create(title)
+    async def create_stream(self, title: str) -> Stream:
+        return await self._streams_repository.create(title)
 
-    def start_stream(self, stream_id: str) -> Stream:
-        stream = self.get_stream(stream_id)
+    async def start_stream(self, stream_id: str) -> Stream:
+        stream = await self.get_stream(stream_id)
 
         if stream.status is StreamStatus.LIVE:
             raise AppError(409, "STREAM_ALREADY_LIVE", "Stream is already live")
@@ -59,12 +59,12 @@ class StreamsService:
                 "started_at": datetime.now(timezone.utc),
             },
         )
-        saved_stream = self._streams_repository.update(updated_stream)
+        saved_stream = await self._streams_repository.update(updated_stream)
         self._notify_status_updated(saved_stream)
         return saved_stream
 
-    def finish_stream(self, stream_id: str) -> Stream:
-        stream = self.get_stream(stream_id)
+    async def finish_stream(self, stream_id: str) -> Stream:
+        stream = await self.get_stream(stream_id)
 
         if stream.status is StreamStatus.SCHEDULED:
             raise AppError(
@@ -86,12 +86,12 @@ class StreamsService:
                 "finished_at": datetime.now(timezone.utc),
             },
         )
-        saved_stream = self._streams_repository.update(updated_stream)
+        saved_stream = await self._streams_repository.update(updated_stream)
         self._notify_status_updated(saved_stream)
         return saved_stream
 
-    def add_viewer(self, stream_id: str, viewer_id: str) -> Stream:
-        stream = self.get_stream(stream_id)
+    async def add_viewer(self, stream_id: str, viewer_id: str) -> Stream:
+        stream = await self.get_stream(stream_id)
 
         if stream.status is not StreamStatus.LIVE:
             raise AppError(
@@ -103,11 +103,11 @@ class StreamsService:
         viewers = self._stream_viewers.setdefault(stream_id, set())
         viewers.add(viewer_id)
 
-        return self._streams_repository.update(
+        return await self._streams_repository.update(
             stream.model_copy(update={"viewer_count": len(viewers)}),
         )
 
-    def remove_viewer(self, stream_id: str, viewer_id: str) -> Stream | None:
+    async def remove_viewer(self, stream_id: str, viewer_id: str) -> Stream | None:
         viewers = self._stream_viewers.get(stream_id)
 
         if not viewers or viewer_id not in viewers:
@@ -118,17 +118,17 @@ class StreamsService:
         if not viewers:
             self._stream_viewers.pop(stream_id, None)
 
-        stream = self._streams_repository.find_by_id(stream_id)
+        stream = await self._streams_repository.find_by_id(stream_id)
 
         if not stream:
             return None
 
-        return self._streams_repository.update(
+        return await self._streams_repository.update(
             stream.model_copy(update={"viewer_count": len(viewers)}),
         )
 
-    def add_reaction(self, stream_id: str, viewer_id: str, _reaction: str) -> Stream:
-        stream = self.get_stream(stream_id)
+    async def add_reaction(self, stream_id: str, viewer_id: str, _reaction: str) -> Stream:
+        stream = await self.get_stream(stream_id)
 
         if stream.status is not StreamStatus.LIVE:
             raise AppError(
@@ -146,7 +146,7 @@ class StreamsService:
                 "Viewer is not connected to this stream",
             )
 
-        return self._streams_repository.update(
+        return await self._streams_repository.update(
             stream.model_copy(
                 update={"reaction_count": stream.reaction_count + 1},
             ),

@@ -9,7 +9,8 @@ from app.api.routes import create_api_router
 from app.api.websocket import register_websocket_route
 from app.core.config import settings
 from app.core.handlers import register_exception_handlers
-from app.repositories.in_memory import InMemoryStreamsRepository
+from app.database.session import close_database, create_database
+from app.repositories.postgres import PostgresStreamsRepository
 from app.services.streams import StreamsService
 from app.services.websocket import WebSocketManager
 
@@ -17,14 +18,20 @@ logging.basicConfig(level=settings.log_level)
 
 
 def create_app() -> FastAPI:
-    streams_repository = InMemoryStreamsRepository()
+    database_engine, session_factory = create_database(
+        settings.database_url,
+        echo=settings.database_echo,
+    )
+    streams_repository = PostgresStreamsRepository(session_factory)
     streams_service = StreamsService(streams_repository)
     websocket_manager = WebSocketManager(streams_service)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        await streams_repository.reset_viewer_counts()
         yield
         await websocket_manager.close()
+        await close_database(database_engine)
 
     application = FastAPI(
         title=settings.app_name,
