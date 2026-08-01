@@ -1,23 +1,26 @@
 # Live Stream Monitor
 
-Live Stream Monitor is an exploratory full-stack application for creating and monitoring live streams. The final product direction is intentionally open, so the code focuses on a small, extensible real-time dashboard rather than committing to authentication, persistent storage, or video delivery.
+Live Stream Monitor is a self-hosted control panel for managing live-stream
+events. It is designed for personal servers, small teams, and private
+communities that need a simple dashboard without depending on a hosted video
+platform.
 
-The current application supports:
+The current release provides:
 
-- creating scheduled streams;
-- starting and finishing streams;
-- listing and opening streams through a REST API;
-- tracking connected viewers through WebSocket;
-- broadcasting viewer counts, reactions, and status changes;
-- `like`, `fire`, and `clap` reactions;
-- validation and structured API/WebSocket errors;
-- Russian and English frontend localization;
-- browser-language detection with English fallback;
+- creation, starting, and finishing of stream events;
+- persistent stream metadata in PostgreSQL;
+- automatic database migrations in Docker;
+- REST and WebSocket APIs;
+- viewer counts and live reactions;
+- health and database readiness endpoints;
+- Russian and English localization;
 - light and dark themes;
-- reusable frontend UI components with configurable visual tokens;
-- separate frontend and backend Docker services.
+- reusable frontend UI components and configurable visual tokens;
+- separate frontend, backend, and PostgreSQL Docker services.
 
-Video transport is not implemented yet. The stream page currently displays a player placeholder. Stream data is stored in memory and is lost when the backend restarts.
+Video ingestion and playback are not implemented yet. The stream page currently
+contains a player placeholder. Media transport is planned as a separate
+integration with a dedicated media server.
 
 ## Technology
 
@@ -35,8 +38,11 @@ Video transport is not implemented yet. The stream page currently displays a pla
 - Python 3.13;
 - FastAPI;
 - Uvicorn;
-- Pydantic;
-- in-memory repository.
+- Pydantic and pydantic-settings;
+- SQLAlchemy async ORM;
+- asyncpg;
+- Alembic;
+- PostgreSQL.
 
 ## Repository structure
 
@@ -57,42 +63,69 @@ server/
   src/app/
     api/              REST and WebSocket transport
     core/              configuration and error handlers
-    repositories/     data access implementations
+    database/          SQLAlchemy base, models, and sessions
+    repositories/     PostgreSQL data access
     schemas/          Pydantic schemas
     services/         stream and WebSocket business services
-    utils/             shared helpers
-    main.py            FastAPI application assembly
+  migrations/         Alembic migrations
   pyproject.toml      Poetry project with the app package
   poetry.lock         locked backend dependencies
 
 client/Dockerfile     frontend build and Nginx image
 server/Dockerfile     Python 3.13 backend image
-docker-compose.yml    separate frontend and backend services
+docker-compose.yml    frontend, backend, and PostgreSQL services
 Makefile              common local and Docker commands
 ```
 
-The old root-level `shared/` directory was removed. The frontend owns its TypeScript contracts under `client/src/shared`; the Python backend validates its own external data with Pydantic models.
+The old root-level `shared/` directory was removed. The frontend owns its
+TypeScript contracts under `client/src/shared`; the Python backend validates
+its own external data with Pydantic models.
 
-## Requirements
+## Quick start with Docker
 
-For local development:
+Docker Compose is the recommended way to run the project:
+
+```bash
+make docker-up
+```
+
+The command builds the frontend and backend, starts PostgreSQL, applies pending
+Alembic migrations, and starts the application. Open
+`http://localhost:8080` in a browser.
+
+Default endpoints:
+
+- frontend: `http://localhost:8080`;
+- backend: `http://localhost:3000`;
+- API documentation: `http://localhost:3000/docs`;
+- PostgreSQL: `localhost:5432`.
+
+Stop the containers without deleting PostgreSQL data:
+
+```bash
+make docker-down
+```
+
+The `postgres-data` Docker volume is kept by default. Set a strong
+`POSTGRES_PASSWORD` before exposing the installation beyond a local network.
+
+## Local development
+
+Requirements:
 
 - Python 3.13;
 - Node.js 22 or newer;
 - npm;
 - Poetry 2.1 or newer;
+- Docker with Compose support for the local PostgreSQL service;
 - GNU Make is recommended.
 
-For containerized development:
-
-- Docker with Docker Compose support.
-
-## Local development
-
-Install both sets of dependencies:
+Install dependencies and prepare the local environment:
 
 ```bash
+cp server/.env.example server/.env
 make install
+make db-up
 ```
 
 Start the backend and frontend in separate terminals:
@@ -101,76 +134,52 @@ Start the backend and frontend in separate terminals:
 make dev-backend
 ```
 
-The FastAPI server is available at `http://localhost:3000`. Interactive API documentation is available at `http://localhost:3000/docs`.
+The backend command applies migrations before starting FastAPI. It is
+available at `http://localhost:3000`.
 
 ```bash
 make dev-frontend
 ```
 
-The Vite frontend is available at `http://localhost:5173`. Its development proxy forwards `/api` and `/ws` to the backend.
+The frontend is available at `http://localhost:5173`. Vite proxies `/api` and
+`/ws` to the backend.
 
-The services can also be started directly:
-
-```bash
-cd server
-poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
-```
+To stop only the local database:
 
 ```bash
-cd client
-npm run dev -- --host 0.0.0.0
+make db-down
 ```
+
+For a custom PostgreSQL connection, set `DATABASE_URL` in `server/.env`. For
+Docker Compose, set the corresponding variables in a root `.env` file and use
+the Docker service hostname when the database runs inside Compose.
 
 ## Makefile commands
 
-Run `make help` for the full list. The main commands are:
+Run `make help` for the full list:
 
 | Command | Purpose |
 | --- | --- |
 | `make install` | Install frontend npm packages and backend Poetry dependencies |
 | `make dev-frontend` | Start the Vite development server |
-| `make dev-backend` | Start the FastAPI development server |
+| `make dev-backend` | Apply migrations and start the FastAPI server |
+| `make db-up` | Start the local PostgreSQL container |
+| `make db-down` | Stop the local PostgreSQL container |
+| `make db-migrate` | Apply PostgreSQL migrations manually |
 | `make lint` | Run frontend ESLint and backend Ruff checks |
 | `make build` | Build the frontend for production |
 | `make backend-check` | Compile-check and import-check the backend |
-| `make docker-build` | Build both Docker images |
-| `make docker-up` | Build and start both Docker services |
-| `make docker-down` | Stop and remove the Docker services |
+| `make docker-build` | Build all Docker images |
+| `make docker-up` | Build and start all Docker services |
+| `make docker-down` | Stop and remove the Docker containers |
 | `make docker-logs` | Follow Docker service logs |
-
-## Docker
-
-Build and start the separate services with:
-
-```bash
-make docker-up
-```
-
-The default addresses are:
-
-- frontend: `http://localhost:8080`;
-- backend: `http://localhost:3000`;
-- backend API documentation: `http://localhost:3000/docs`.
-
-The frontend image contains the Vite production build and Nginx. Nginx serves the single-page application, proxies `/api` to the backend service, and forwards WebSocket upgrades from `/ws`. The backend image uses Python 3.13, Poetry, and Uvicorn.
-
-Stop the services with:
-
-```bash
-make docker-down
-```
-
-The following environment variables can change the published ports or CORS origin:
-
-```bash
-FRONTEND_PORT=8081 BACKEND_PORT=3001 CORS_ORIGINS=http://localhost:8081 make docker-up
-```
 
 ## REST API
 
 | Method | URL | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/health` | Check backend availability |
+| `GET` | `/api/health` | Check that the backend process is running |
+| `GET` | `/api/ready` | Check that the backend can access PostgreSQL |
 | `GET` | `/api/streams` | Get all streams |
 | `GET` | `/api/streams/{streamId}` | Get one stream |
 | `POST` | `/api/streams` | Create a stream |
@@ -240,21 +249,32 @@ Server messages are:
 - `stream:status-updated`;
 - `error`.
 
-Only viewers connected to a live stream can send reactions. A finished stream rejects new viewers and reactions.
+Only viewers connected to a live stream can send reactions. A finished stream
+rejects new viewers and reactions.
 
 ## Frontend preferences and visual system
 
-The frontend detects the first supported browser language from `navigator.languages` and `navigator.language`. Russian is selected for `ru-*`, English for `en-*`, and English is used for all other languages. A manual language selection is stored in `localStorage`.
+The frontend detects the first supported browser language from
+`navigator.languages` and `navigator.language`. Russian is selected for
+`ru-*`, English for `en-*`, and English is used for all other languages. A
+manual language selection is stored in `localStorage`.
 
-The theme switcher stores the explicit light/dark choice in `localStorage`. If no choice exists, the initial theme follows `prefers-color-scheme`.
+The theme switcher stores the explicit light/dark choice in `localStorage`. If
+no choice exists, the initial theme follows `prefers-color-scheme`.
 
-Reusable components such as `Button`, `ButtonLink`, `Card`, and `StatusBadge` live under `client/src/components/ui`. Pages use CSS custom properties from `client/src/index.css` for surfaces, colors, borders, shadows, and radii, so a visual style can be changed centrally. Component variants are preferred over page-specific styling.
+Reusable components such as `Button`, `ButtonLink`, `Card`, and `StatusBadge`
+live under `client/src/components/ui`. Pages use CSS custom properties from
+`client/src/index.css` for surfaces, colors, borders, shadows, and radii, so a
+visual style can be changed centrally. Component variants are preferred over
+page-specific styling.
 
-## Limitations
+## Current limitations
 
 - no authentication or role separation;
-- no persistent database;
 - no video ingestion or playback;
+- no MediaMTX integration yet;
+- active WebSocket viewer state is local to one backend process;
+- active viewer counts are reset when the backend starts;
+- no automated PostgreSQL backup or retention policy;
 - no automatic WebSocket reconnection;
-- WebSocket state is local to one backend process;
-- the in-memory repository is not suitable for multiple backend replicas.
+- no multi-instance backend coordination.

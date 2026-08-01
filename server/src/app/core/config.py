@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=False,
         extra="ignore",
+        env_file=".env",
     )
 
     @property
