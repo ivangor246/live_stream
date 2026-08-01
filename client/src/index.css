@@ -584,6 +584,63 @@ dd {
   text-align: center;
 }
 
+.stream-connection {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.stream-connection header p {
+  margin-bottom: 0;
+  color: var(--color-text-soft);
+}
+
+.stream-connection__fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.copy-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.copy-field__label {
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.copy-field__control {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.copy-field code {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.75rem;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+}
+
+.stream-connection__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+}
+
+.stream-connection__links a {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
 .connection-status {
   display: inline-flex;
   width: fit-content;

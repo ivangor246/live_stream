@@ -9,14 +9,17 @@ import type {
   Stream,
   StreamStatus,
 } from "../shared/stream.js";
+import type { StreamConnection } from "../shared/api.js";
 import {
   finishStream,
   getStream,
+  getStreamConnection,
 } from "../api/streamsApi.js";
 import { localizeError } from "../i18n/errorMessages.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 import { ConnectionStatus } from "../components/ConnectionStatus.js";
 import { ReactionPanel } from "../components/ReactionPanel.js";
+import { StreamConnectionPanel } from "../components/StreamConnectionPanel.js";
 import { StreamPlayer } from "../components/StreamPlayer.js";
 import { StreamStatistics } from "../components/StreamStatistics.js";
 import { Button } from "../components/ui/Button.js";
@@ -25,6 +28,8 @@ import { useStreamSocket } from "../hooks/useStreamSocket.js";
 
 interface StreamContentProps {
   stream: Stream;
+  connection: StreamConnection | null;
+  connectionError: string | null;
   isFinishing: boolean;
   actionError: string | null;
   onFinish: () => void;
@@ -45,6 +50,8 @@ function isAbortError(error: unknown): boolean {
 
 function StreamContent({
   stream,
+  connection,
+  connectionError,
   isFinishing,
   actionError,
   onFinish,
@@ -83,6 +90,14 @@ function StreamContent({
       </header>
 
       <StreamPlayer status={streamStatus} />
+
+      {connection && <StreamConnectionPanel connection={connection} />}
+
+      {connectionError && (
+        <p role="alert">
+          {t("stream.connectionError", { message: connectionError })}
+        </p>
+      )}
 
       <ConnectionStatus status={connectionStatus} />
 
@@ -125,6 +140,10 @@ export function StreamPage() {
   }>();
 
   const [stream, setStream] = useState<Stream | null>(null);
+  const [connection, setConnection] = useState<StreamConnection | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [connectionErrorStreamId, setConnectionErrorStreamId] =
+    useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] =
     useState<string | null>(null);
@@ -151,6 +170,22 @@ export function StreamPage() {
         );
 
         setStream(loadedStream);
+
+        try {
+          const streamConnection = await getStreamConnection(
+            currentStreamId,
+            abortController.signal,
+          );
+
+          setConnection(streamConnection);
+        } catch (error: unknown) {
+          if (!isAbortError(error)) {
+            setConnectionError(
+              localizeError(error, t, "errors.loadConnection"),
+            );
+            setConnectionErrorStreamId(currentStreamId);
+          }
+        }
       } catch (error: unknown) {
         if (isAbortError(error)) {
           return;
@@ -224,10 +259,17 @@ export function StreamPage() {
     );
   }
 
+  const activeConnection =
+    connection?.streamId === stream.id ? connection : null;
+  const activeConnectionError =
+    connectionErrorStreamId === stream.id ? connectionError : null;
+
   return (
     <StreamContent
       key={`${stream.id}:${stream.status}`}
       stream={stream}
+      connection={activeConnection}
+      connectionError={activeConnectionError}
       isFinishing={isFinishing}
       actionError={actionError}
       onFinish={handleFinish}

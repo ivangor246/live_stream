@@ -6,6 +6,7 @@ import type {
   GetStreamResponse,
   GetStreamsResponse,
   ReadinessResponse,
+  StreamConnection,
 } from "../shared/api.js";
 
 import type { Stream, StreamStatus } from "../shared/stream.js";
@@ -68,6 +69,20 @@ function isReadinessResponse(value: unknown): value is ReadinessResponse {
   }
 
   return value.status === "ok" && value.database === "ok";
+}
+
+function isStreamConnection(value: unknown): value is StreamConnection {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.streamId === "string" &&
+    typeof value.rtmpUrl === "string" &&
+    typeof value.streamKey === "string" &&
+    typeof value.hlsUrl === "string" &&
+    typeof value.webrtcUrl === "string"
+  );
 }
 
 function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
@@ -147,6 +162,19 @@ export function getStream(
   return request<GetStreamResponse>(
     `/api/streams/${encodedStreamId}`,
     isStream,
+    createSignalInit(signal),
+  );
+}
+
+export function getStreamConnection(
+  streamId: string,
+  signal?: AbortSignal,
+): Promise<StreamConnection> {
+  const encodedStreamId = encodeURIComponent(streamId);
+
+  return request<StreamConnection>(
+    `/api/streams/${encodedStreamId}/connection`,
+    isStreamConnection,
     createSignalInit(signal),
   );
 }

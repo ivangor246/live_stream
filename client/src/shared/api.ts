@@ -5,6 +5,14 @@ export interface ReadinessResponse {
   database: "ok";
 }
 
+export interface StreamConnection {
+  streamId: string;
+  rtmpUrl: string;
+  streamKey: string;
+  hlsUrl: string;
+  webrtcUrl: string;
+}
+
 export type CreateStreamRequest = Pick<Stream, "title">;
 
 export type CreateStreamResponse = Stream;
