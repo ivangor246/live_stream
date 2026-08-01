@@ -20,7 +20,8 @@ The current release provides:
 - managed MediaMTX paths created at stream start and removed at stream finish;
 - an embedded WebRTC player with automatic HLS fallback;
 - first-run local administrator setup with cookie-based sessions;
-- protected stream management and dashboard WebSocket access;
+- administrator, operator, and viewer roles with protected stream management;
+- one-time account invitation links for operators and viewers;
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - Russian and English localization;
 - light and dark themes;
@@ -29,9 +30,9 @@ The current release provides:
 
 The dashboard prepares MediaMTX connection details and an embedded player for
 each live stream. It also polls the MediaMTX Control API and displays the
-current source status. Dashboard access is protected by a local administrator
-session. MediaMTX asks the backend to validate every publish and read request
-for a live path. The player prefers WebRTC and falls back to HLS.
+current source status. Local accounts have role-based access to the dashboard.
+MediaMTX asks the backend to validate every publish and read request for a live
+path. The player prefers WebRTC and falls back to HLS.
 
 ## Technology
 
@@ -135,14 +136,27 @@ The `postgres-data` Docker volume is kept by default. Set a strong
 On the first visit, the dashboard asks you to create a local administrator
 account. Use a password with at least 12 characters. Later visits show the
 sign-in form; the session is stored in an HttpOnly cookie and lasts 14 days by
-default.
+default. Administrators can create one-time links for operator and viewer
+accounts directly from the stream list. Send a link only through a trusted
+channel: anyone who opens it before it expires can create the assigned account.
 
 ## Authentication
 
 The first setup endpoint is available only while the PostgreSQL database has no
-users. After setup, stream management endpoints and the dashboard WebSocket
-require the administrator session. Health and database readiness endpoints
-remain public so Docker and reverse proxies can check the service.
+users. Health and database readiness endpoints remain public so Docker and
+reverse proxies can check the service.
+
+There are three local roles:
+
+- **Administrator** — manages streams and account invitation links.
+- **Operator** — manages streams and obtains RTMP publishing details.
+- **Viewer** — lists streams and opens their safe playback details, but cannot
+  obtain RTMP credentials or change stream state.
+
+Administrators create one-time invitation links for operators and viewers from
+the dashboard. The backend stores only a SHA-256 hash of each link token. Links
+expire after seven days by default, can be revoked while unused, and are shown
+in full only immediately after creation.
 
 MediaMTX receives short-lived per-stream credentials from the backend. The
 `MEDIA_AUTH_SECRET` value signs them and `MEDIA_AUTH_TOKEN_TTL_SECONDS` controls
@@ -154,11 +168,12 @@ For an HTTPS deployment, enable secure cookies in the root `.env` file:
 ```dotenv
 AUTH_SECURE_COOKIE=true
 AUTH_SESSION_TTL_DAYS=14
+AUTH_INVITE_TTL_HOURS=168
 ```
 
-Keep `AUTH_SECURE_COOKIE=false` for plain HTTP local development. The current
-release supports one local administrator account; separate operator/viewer
-roles and invitation links are planned.
+Keep `AUTH_SECURE_COOKIE=false` for plain HTTP local development. Adjust
+`AUTH_INVITE_TTL_HOURS` if your installation needs a shorter or longer account
+invitation lifetime.
 
 ## Local development
 
@@ -245,14 +260,20 @@ Run `make help` for the full list:
 | `GET` | `/api/ready` | Check that the backend can access PostgreSQL |
 | `GET` | `/api/auth/status` | Check setup and session status |
 | `POST` | `/api/auth/setup` | Create the first administrator account |
-| `POST` | `/api/auth/login` | Start an administrator session |
+| `POST` | `/api/auth/login` | Start an authenticated session |
 | `POST` | `/api/auth/logout` | End the current session |
-| `GET` | `/api/streams` | Get all streams (administrator session required) |
-| `GET` | `/api/streams/{streamId}` | Get one stream (administrator session required) |
-| `GET` | `/api/streams/{streamId}/connection` | Get connection details (administrator session required) |
-| `POST` | `/api/streams` | Create a stream (administrator session required) |
-| `POST` | `/api/streams/{streamId}/start` | Start a scheduled stream (administrator session required) |
-| `POST` | `/api/streams/{streamId}/finish` | Finish a live stream (administrator session required) |
+| `GET` | `/api/auth/invitations` | List active account invitations (administrator only) |
+| `POST` | `/api/auth/invitations` | Create an operator/viewer invitation (administrator only) |
+| `DELETE` | `/api/auth/invitations/{invitationId}` | Revoke an unused invitation (administrator only) |
+| `GET` | `/api/auth/invitations/{token}` | Check an invitation before accepting it |
+| `POST` | `/api/auth/invitations/{token}/accept` | Create an account from an invitation |
+| `GET` | `/api/streams` | Get all streams (any authenticated role) |
+| `GET` | `/api/streams/{streamId}` | Get one stream (any authenticated role) |
+| `GET` | `/api/streams/{streamId}/playback` | Get safe HLS/WebRTC playback details (any authenticated role) |
+| `GET` | `/api/streams/{streamId}/connection` | Get RTMP connection details (administrator or operator) |
+| `POST` | `/api/streams` | Create a stream (administrator or operator) |
+| `POST` | `/api/streams/{streamId}/start` | Start a scheduled stream (administrator or operator) |
+| `POST` | `/api/streams/{streamId}/finish` | Finish a live stream (administrator or operator) |
 
 The connection response includes `sourceStatus` (`online`, `offline`, or
 `unavailable`) and the detected `sourceProtocol` when MediaMTX has an active
@@ -363,9 +384,9 @@ page-specific styling.
 
 ## Current limitations
 
-- one local administrator account only; no operator/viewer role separation;
 - no source-state history, alerts, or automatic stream lifecycle changes;
-- no separate viewer roles or invitation links for media access;
+- no private event audience or per-stream viewer invitation links;
+- account invitation links are not delivered by email or another notification service;
 - media paths are removed only when the operator finishes a stream;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
