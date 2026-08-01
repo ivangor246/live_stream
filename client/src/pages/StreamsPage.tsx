@@ -7,24 +7,19 @@ import {
   getStreams,
   startStream,
 } from "../api/streamsApi.js";
+import { localizeError } from "../i18n/errorMessages.js";
+import { useI18n } from "../i18n/I18nProvider.js";
 import { CreateStreamForm } from "../components/CreateStreamForm.js";
 import { StreamCard } from "../components/StreamCard.js";
 
 type StreamStatusAction = (streamId: string) => Promise<Stream>;
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Произошла неизвестная ошибка";
-}
 
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
 export function StreamsPage() {
+  const { t } = useI18n();
   const [streams, setStreams] = useState<Stream[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -44,7 +39,7 @@ export function StreamsPage() {
           return;
         }
 
-        setLoadError(getErrorMessage(error));
+        setLoadError(localizeError(error, t, "errors.loadStreams"));
       } finally {
         if (!abortController.signal.aborted) {
           setIsLoading(false);
@@ -57,7 +52,7 @@ export function StreamsPage() {
     return () => {
       abortController.abort();
     };
-  }, []);
+  }, [t]);
 
   const handleCreate = useCallback(async (title: string): Promise<void> => {
     const createdStream = await createStreamRequest({
@@ -81,14 +76,14 @@ export function StreamsPage() {
           ),
         );
       } catch (error: unknown) {
-        setActionError(getErrorMessage(error));
+        setActionError(localizeError(error, t, "errors.updateStream"));
       } finally {
         setUpdatingStreamId((currentStreamId) =>
           currentStreamId === streamId ? null : currentStreamId,
         );
       }
     },
-    [],
+    [t],
   );
 
   const handleStart = useCallback(
@@ -108,28 +103,28 @@ export function StreamsPage() {
   return (
     <main className="page-shell">
       <header className="page-header">
-        <p className="eyebrow">Real-time dashboard</p>
-        <h1>Live Stream Monitor</h1>
-        <p>Создавайте трансляции и следите за эфиром.</p>
+        <p className="eyebrow">{t("app.eyebrow")}</p>
+        <h1>{t("app.name")}</h1>
+        <p>{t("app.description")}</p>
       </header>
 
       <CreateStreamForm onCreate={handleCreate} />
 
       <section className="streams-section">
-        <h2>Трансляции</h2>
+        <h2>{t("streams.heading")}</h2>
 
-        {isLoading && <p>Загрузка трансляций...</p>}
+        {isLoading && <p>{t("streams.loading")}</p>}
 
         {loadError && (
-          <p role="alert">Не удалось загрузить трансляции: {loadError}</p>
+          <p role="alert">{t("streams.loadError", { message: loadError })}</p>
         )}
 
         {actionError && (
-          <p role="alert">Не удалось изменить трансляцию: {actionError}</p>
+          <p role="alert">{t("streams.actionError", { message: actionError })}</p>
         )}
 
         {!isLoading && !loadError && streams.length === 0 && (
-          <p>Трансляций пока нет.</p>
+          <p>{t("streams.empty")}</p>
         )}
 
         {!isLoading && streams.length > 0 && (

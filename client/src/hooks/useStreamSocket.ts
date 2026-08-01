@@ -6,9 +6,9 @@ import {
   useState,
 } from "react";
 
-import type {
-  StreamStatus,
-} from "../shared/stream.js";
+import { localizeErrorCode } from "../i18n/errorMessages.js";
+import { useI18n } from "../i18n/I18nProvider.js";
+import type { StreamStatus } from "../shared/stream.js";
 import type {
   ClientWebSocketMessage,
   ReactionType,
@@ -103,6 +103,7 @@ export function useStreamSocket(
   initialReactionCount: number,
   initialStreamStatus: StreamStatus,
 ): UseStreamSocketResult {
+  const { t } = useI18n();
   const viewerId = useMemo(() => crypto.randomUUID(), []);
   const socketRef = useRef<WebSocket | null>(null);
 
@@ -120,7 +121,7 @@ export function useStreamSocket(
     useState<ReactionType | null>(null);
   const [streamStatus, setStreamStatus] =
     useState<StreamStatus>(initialStreamStatus);
-  const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialStreamStatus !== "live") {
@@ -138,7 +139,7 @@ export function useStreamSocket(
       }
 
       setConnectionStatus("open");
-      setError(null);
+      setErrorCode(null);
 
       const joinMessage: ClientWebSocketMessage = {
         type: "viewer:join",
@@ -161,12 +162,12 @@ export function useStreamSocket(
       try {
         parsedMessage = JSON.parse(String(event.data));
       } catch {
-        setError("Server sent invalid JSON");
+        setErrorCode("INVALID_WEBSOCKET_JSON");
         return;
       }
 
       if (!isServerWebSocketMessage(parsedMessage)) {
-        setError("Server sent an invalid WebSocket message");
+        setErrorCode("INVALID_WEBSOCKET_MESSAGE");
         return;
       }
 
@@ -193,7 +194,7 @@ export function useStreamSocket(
           break;
 
         case "error":
-          setError(parsedMessage.payload.message);
+          setErrorCode(parsedMessage.payload.code);
           break;
       }
     }
@@ -204,7 +205,7 @@ export function useStreamSocket(
       }
 
       setConnectionStatus("error");
-      setError("WebSocket connection failed");
+      setErrorCode("INTERNAL_SERVER_ERROR");
     }
 
     function handleClose(): void {
@@ -238,12 +239,12 @@ export function useStreamSocket(
       const socket = socketRef.current;
 
       if (streamStatus !== "live") {
-        setError("Завершённая трансляция не принимает реакции");
+        setErrorCode("WEBSOCKET_NOT_LIVE");
         return;
       }
 
       if (!socket || socket.readyState !== WebSocket.OPEN) {
-        setError("WebSocket connection is not open");
+        setErrorCode("WEBSOCKET_NOT_OPEN");
         return;
       }
 
@@ -257,7 +258,7 @@ export function useStreamSocket(
       };
 
       socket.send(JSON.stringify(message));
-      setError(null);
+      setErrorCode(null);
     },
     [streamId, streamStatus, viewerId],
   );
@@ -268,7 +269,7 @@ export function useStreamSocket(
     reactionCount,
     lastReaction,
     streamStatus,
-    error,
+    error: errorCode ? localizeErrorCode(errorCode, t) : null,
     sendReaction,
   };
 }

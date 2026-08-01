@@ -1,5 +1,9 @@
 import { type SubmitEvent, useState } from "react";
 
+import { localizeError } from "../i18n/errorMessages.js";
+import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
+import { Button } from "./ui/Button.js";
+
 interface CreateStreamFormState {
   title: string;
   isSubmitting: boolean;
@@ -10,29 +14,22 @@ interface CreateStreamFormProps {
   onCreate: (title: string) => Promise<void>;
 }
 
-function validateTitle(title: string): string | null {
+function validateTitle(title: string): TranslationKey | null {
   const trimmedTitle = title.trim();
 
   if (trimmedTitle.length < 3) {
-    return "Название должно содержать минимум 3 символа";
+    return "validation.titleMin";
   }
 
   if (trimmedTitle.length > 100) {
-    return "Название должно содержать максимум 100 символов";
+    return "validation.titleMax";
   }
 
   return null;
 }
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Не удалось создать трансляцию.";
-}
-
 export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
+  const { t } = useI18n();
   const [formState, setFormState] = useState<CreateStreamFormState>({
     title: "",
     isSubmitting: false,
@@ -49,7 +46,7 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
     if (validationError) {
       setFormState((currentState) => ({
         ...currentState,
-        error: validationError,
+        error: t(validationError),
       }));
 
       return;
@@ -75,16 +72,16 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
       setFormState((currentState) => ({
         ...currentState,
         isSubmitting: false,
-        error: getErrorMessage(error),
+        error: localizeError(error, t, "errors.createStream"),
       }));
     }
   }
 
   return (
     <form className="create-form" onSubmit={handleSubmit}>
-      <h2>Создать трансляцию</h2>
+      <h2>{t("streams.createTitle")}</h2>
 
-      <label htmlFor="stream-title">Название</label>
+      <label htmlFor="stream-title">{t("streams.titleLabel")}</label>
 
       <input
         id="stream-title"
@@ -93,6 +90,7 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
         value={formState.title}
         disabled={formState.isSubmitting}
         maxLength={100}
+        placeholder={t("streams.titlePlaceholder")}
         onChange={(event) => {
           setFormState((currentState) => ({
             ...currentState,
@@ -104,13 +102,13 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
 
       {formState.error && <p role="alert">{formState.error}</p>}
 
-      <button
-        className="button button--primary"
+      <Button
         type="submit"
+        variant="primary"
         disabled={formState.isSubmitting}
       >
-        {formState.isSubmitting ? "Создание..." : "Создать"}
-      </button>
+        {formState.isSubmitting ? t("streams.creating") : t("streams.create")}
+      </Button>
     </form>
   );
 }

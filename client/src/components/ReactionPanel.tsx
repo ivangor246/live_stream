@@ -1,4 +1,6 @@
 import type { ReactionType } from "../shared/websocket.js";
+import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
+import { Button } from "./ui/Button.js";
 
 interface ReactionPanelProps {
   disabled: boolean;
@@ -8,69 +10,68 @@ interface ReactionPanelProps {
 
 interface ReactionOption {
   type: ReactionType;
-  label: string;
+  labelKey: TranslationKey;
   symbol: string;
 }
 
 const reactionOptions: ReactionOption[] = [
   {
     type: "like",
-    label: "Нравится",
+    labelKey: "reaction.like",
     symbol: "👍",
   },
   {
     type: "fire",
-    label: "Огонь",
+    labelKey: "reaction.fire",
     symbol: "🔥",
   },
   {
     type: "clap",
-    label: "Аплодисменты",
+    labelKey: "reaction.clap",
     symbol: "👏",
   },
 ];
-
-function getReactionLabel(
-  reaction: ReactionType,
-): string {
-  return (
-    reactionOptions.find(
-      (option) => option.type === reaction,
-    )?.label ?? reaction
-  );
-}
 
 export function ReactionPanel({
   disabled,
   lastReaction,
   onReaction,
 }: ReactionPanelProps) {
+  const { t } = useI18n();
+
   return (
     <section className="reaction-panel" aria-labelledby="reactions-heading">
-      <h2 id="reactions-heading">Реакции</h2>
+      <h2 id="reactions-heading">{t("stream.reactionsHeading")}</h2>
 
       <div className="reaction-panel__actions">
         {reactionOptions.map((option) => (
-          <button
-            className="button button--reaction"
+          <Button
+            variant="reaction"
             key={option.type}
-            type="button"
             disabled={disabled}
-            aria-label={option.label}
+            aria-label={t(option.labelKey)}
             onClick={() => {
               onReaction(option.type);
             }}
           >
             <span aria-hidden="true">{option.symbol}</span>{" "}
-            {option.label}
-          </button>
+            {t(option.labelKey)}
+          </Button>
         ))}
       </div>
 
       <p aria-live="polite">
         {lastReaction
-          ? `Последняя реакция: ${getReactionLabel(lastReaction)}`
-          : "Реакций пока нет"}
+          ? t(
+              "stream.lastReaction",
+              {
+                reaction: t(
+                  reactionOptions.find((option) => option.type === lastReaction)
+                    ?.labelKey ?? "reaction.like",
+                ),
+              },
+            )
+          : t("stream.noReactions")}
       </p>
     </section>
   );

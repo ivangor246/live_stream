@@ -3,7 +3,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import type {
   Stream,
@@ -13,10 +13,14 @@ import {
   finishStream,
   getStream,
 } from "../api/streamsApi.js";
+import { localizeError } from "../i18n/errorMessages.js";
+import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 import { ConnectionStatus } from "../components/ConnectionStatus.js";
 import { ReactionPanel } from "../components/ReactionPanel.js";
 import { StreamPlayer } from "../components/StreamPlayer.js";
 import { StreamStatistics } from "../components/StreamStatistics.js";
+import { Button } from "../components/ui/Button.js";
+import { ButtonLink } from "../components/ui/ButtonLink.js";
 import { useStreamSocket } from "../hooks/useStreamSocket.js";
 
 interface StreamContentProps {
@@ -26,19 +30,11 @@ interface StreamContentProps {
   onFinish: () => void;
 }
 
-const statusLabels: Record<StreamStatus, string> = {
-  scheduled: "Запланирована",
-  live: "В эфире",
-  finished: "Завершена",
+const statusKeys: Record<StreamStatus, TranslationKey> = {
+  scheduled: "status.scheduled",
+  live: "status.live",
+  finished: "status.finished",
 };
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Произошла неизвестная ошибка";
-}
 
 function isAbortError(error: unknown): boolean {
   return (
@@ -53,6 +49,7 @@ function StreamContent({
   actionError,
   onFinish,
 }: StreamContentProps) {
+  const { t } = useI18n();
   const {
     connectionStatus,
     viewerCount,
@@ -73,15 +70,15 @@ function StreamContent({
     streamStatus !== "live";
 
   return (
-    <main className="page-shell stream-page">
-      <Link className="back-link" to="/">
-        ← К списку трансляций
-      </Link>
+    <main className="page-shell page-shell--narrow stream-page">
+      <ButtonLink className="back-link" to="/" variant="ghost">
+        ← {t("navigation.back")}
+      </ButtonLink>
 
       <header className="page-header stream-page__header">
         <h1>{stream.title}</h1>
         <p>
-          Статус: <strong>{statusLabels[streamStatus]}</strong>
+          {t("stream.status")}: <strong>{t(statusKeys[streamStatus])}</strong>
         </p>
       </header>
 
@@ -101,35 +98,28 @@ function StreamContent({
       />
 
       {streamStatus === "live" && (
-        <button
-          className="button button--danger"
-          type="button"
+        <Button
+          variant="danger"
           disabled={isFinishing}
           onClick={onFinish}
         >
-          {isFinishing
-            ? "Завершение..."
-            : "Завершить трансляцию"}
-        </button>
+          {isFinishing ? t("streams.finishing") : t("streams.finish")}
+        </Button>
       )}
 
       {socketError && (
-        <p role="alert">
-          Ошибка WebSocket: {socketError}
-        </p>
+        <p role="alert">{t("stream.socketError", { message: socketError })}</p>
       )}
 
       {actionError && (
-        <p role="alert">
-          Не удалось завершить трансляцию:{" "}
-          {actionError}
-        </p>
+        <p role="alert">{t("stream.actionError", { message: actionError })}</p>
       )}
     </main>
   );
 }
 
 export function StreamPage() {
+  const { t } = useI18n();
   const { streamId } = useParams<{
     streamId: string;
   }>();
@@ -151,6 +141,9 @@ export function StreamPage() {
     const abortController = new AbortController();
 
     async function loadStream(): Promise<void> {
+      setIsLoading(true);
+      setLoadError(null);
+
       try {
         const loadedStream = await getStream(
           currentStreamId,
@@ -163,7 +156,7 @@ export function StreamPage() {
           return;
         }
 
-        setLoadError(getErrorMessage(error));
+        setLoadError(localizeError(error, t, "errors.loadStream"));
       } finally {
         if (!abortController.signal.aborted) {
           setIsLoading(false);
@@ -176,7 +169,7 @@ export function StreamPage() {
     return () => {
       abortController.abort();
     };
-  }, [streamId]);
+  }, [streamId, t]);
 
   const handleFinish = useCallback((): void => {
     if (!streamId) {
@@ -195,20 +188,20 @@ export function StreamPage() {
         );
         setStream(updatedStream);
       } catch (error: unknown) {
-        setActionError(getErrorMessage(error));
+        setActionError(localizeError(error, t, "errors.updateStream"));
       } finally {
         setIsFinishing(false);
       }
     }
 
     void runFinishRequest();
-  }, [streamId]);
+  }, [streamId, t]);
 
   if (!streamId) {
     return (
       <main className="page-shell page-message">
-        <h1>Неверный адрес трансляции</h1>
-        <Link to="/">Вернуться к списку</Link>
+        <h1>{t("stream.invalidAddressTitle")}</h1>
+        <ButtonLink to="/">{t("navigation.home")}</ButtonLink>
       </main>
     );
   }
@@ -216,7 +209,7 @@ export function StreamPage() {
   if (isLoading) {
     return (
       <main className="page-shell page-message">
-        <p>Загрузка трансляции...</p>
+        <p>{t("stream.loading")}</p>
       </main>
     );
   }
@@ -224,11 +217,9 @@ export function StreamPage() {
   if (loadError || !stream) {
     return (
       <main className="page-shell page-message">
-        <h1>Не удалось открыть трансляцию</h1>
-        <p role="alert">
-          {loadError ?? "Трансляция не найдена"}
-        </p>
-        <Link to="/">Вернуться к списку</Link>
+        <h1>{t("stream.loadErrorTitle")}</h1>
+        <p role="alert">{loadError ?? t("stream.notFound")}</p>
+        <ButtonLink to="/">{t("navigation.home")}</ButtonLink>
       </main>
     );
   }
