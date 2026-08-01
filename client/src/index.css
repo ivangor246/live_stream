@@ -209,10 +209,55 @@ h2 {
   cursor: pointer;
 }
 
+.auth-account {
+  max-width: 14rem;
+  overflow: hidden;
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .page-shell {
   display: grid;
   gap: 1.5rem;
   padding: 3.5rem 0;
+}
+
+.auth-page {
+  min-height: calc(100vh - 4.5rem);
+  align-content: center;
+}
+
+.auth-card {
+  width: min(100%, 30rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.auth-card h1 {
+  margin-bottom: 0.75rem;
+  font-size: clamp(2rem, 6vw, 3rem);
+}
+
+.auth-card__description {
+  margin-bottom: 1.5rem;
+  color: var(--color-text-soft);
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.auth-form label {
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.auth-form [role="alert"] {
+  margin: 0.35rem 0;
 }
 
 .page-shell--narrow {

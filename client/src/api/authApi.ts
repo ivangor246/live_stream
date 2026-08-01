@@ -1,0 +1,138 @@
+import { ApiError } from "./streamsApi.js";
+import type {
+  ApiErrorResponse,
+} from "../shared/api.js";
+import type {
+  AuthCredentials,
+  AuthResponse,
+  AuthStatus,
+} from "../shared/auth.js";
+
+type ResponseValidator<T> = (value: unknown) => value is T;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isAuthUser(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.username === "string" &&
+    value.role === "admin" &&
+    typeof value.createdAt === "string"
+  );
+}
+
+function isAuthStatus(value: unknown): value is AuthStatus {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.setupRequired === "boolean" &&
+    typeof value.authenticated === "boolean" &&
+    (value.user === null || isAuthUser(value.user))
+  );
+}
+
+function isAuthResponse(value: unknown): value is AuthResponse {
+  return isRecord(value) && isAuthUser(value.user);
+}
+
+function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
+  if (!isRecord(value) || !isRecord(value.error)) {
+    return false;
+  }
+
+  return (
+    typeof value.error.code === "string" &&
+    typeof value.error.message === "string"
+  );
+}
+
+async function request<T>(
+  path: string,
+  validateResponse: ResponseValidator<T>,
+  requestInit: RequestInit = {},
+): Promise<T> {
+  const response = await fetch(path, requestInit);
+  const responseBody: unknown = response.status === 204
+    ? null
+    : await response.json();
+
+  if (!response.ok) {
+    if (isApiErrorResponse(responseBody)) {
+      throw new ApiError(
+        response.status,
+        responseBody.error.code,
+        responseBody.error.message,
+      );
+    }
+
+    throw new ApiError(
+      response.status,
+      "UNKNOWN_API_ERROR",
+      `Request failed with status ${response.status}`,
+    );
+  }
+
+  if (!validateResponse(responseBody)) {
+    throw new ApiError(
+      response.status,
+      "INVALID_API_RESPONSE",
+      "Server returned an invalid response",
+    );
+  }
+
+  return responseBody;
+}
+
+function createCredentialsInit(
+  credentials: AuthCredentials,
+): RequestInit {
+  return {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(credentials),
+  };
+}
+
+export function getAuthStatus(signal?: AbortSignal): Promise<AuthStatus> {
+  return request<AuthStatus>("/api/auth/status", isAuthStatus, signal
+    ? { signal }
+    : undefined);
+}
+
+export function setupAuth(
+  credentials: AuthCredentials,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/api/auth/setup",
+    isAuthResponse,
+    createCredentialsInit(credentials),
+  );
+}
+
+export function login(
+  credentials: AuthCredentials,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/api/auth/login",
+    isAuthResponse,
+    createCredentialsInit(credentials),
+  );
+}
+
+export function logout(): Promise<null> {
+  return request<null>(
+    "/api/auth/logout",
+    (value: unknown): value is null => value === null,
+    { method: "POST" },
+  );
+}

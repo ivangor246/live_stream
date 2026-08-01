@@ -1,7 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { useAuth } from "../../auth/AuthProvider.js";
 import { getReadiness } from "../../api/streamsApi.js";
+import { Button } from "../ui/Button.js";
 import { useI18n } from "../../i18n/I18nProvider.js";
 import { LanguageSwitcher } from "./LanguageSwitcher.js";
 import { SystemStatus, type SystemStatusState } from "./SystemStatus.js";
@@ -13,6 +15,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const { locale, setLocale, t } = useI18n();
+  const { user, logout } = useAuth();
   const [systemStatus, setSystemStatus] =
     useState<SystemStatusState>("checking");
 
@@ -57,6 +60,20 @@ export function AppShell({ children }: AppShellProps) {
 
           <div className="app-header__controls">
             <SystemStatus status={systemStatus} />
+            {user && (
+              <>
+                <span className="auth-account">
+                  {t("auth.account", { username: user.username })}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => void logout()}
+                >
+                  {t("auth.logout")}
+                </Button>
+              </>
+            )}
             <LanguageSwitcher locale={locale} onChange={setLocale} />
             <ThemeSwitcher />
           </div>
