@@ -9,7 +9,12 @@ from app.schemas.invitation import (
     StreamViewerInvitation,
     ViewerInvitationPlayback,
 )
-from app.services.media import MediaConnectionService, MediaStatusService
+from app.schemas.media import RecordingSegment
+from app.services.media import (
+    MediaConnectionService,
+    MediaRecordingService,
+    MediaStatusService,
+)
 from app.services.streams import StreamsService
 
 
@@ -19,12 +24,14 @@ class StreamViewerInvitationService:
         repository: PostgresStreamViewerInvitesRepository,
         streams_service: StreamsService,
         media_connection_service: MediaConnectionService,
+        media_recording_service: MediaRecordingService,
         media_status_service: MediaStatusService,
         ttl_hours: int,
     ) -> None:
         self._repository = repository
         self._streams_service = streams_service
         self._media_connection_service = media_connection_service
+        self._media_recording_service = media_recording_service
         self._media_status_service = media_status_service
         self._ttl = timedelta(hours=ttl_hours)
 
@@ -67,11 +74,7 @@ class StreamViewerInvitationService:
             )
 
     async def get_playback(self, token: str) -> ViewerInvitationPlayback:
-        invitation = await self._repository.find_active(_hash_token(token), _utc_now())
-        if invitation is None:
-            raise _invalid_invitation_error()
-
-        stream = await self._get_private_stream(invitation.stream_id)
+        stream = await self.get_stream(token)
         stream_key = await self._streams_service.get_stream_key(stream.id)
         path_status = await self._media_status_service.get_path_status(stream_key)
         playback = self._media_connection_service.get_playback(
@@ -80,6 +83,18 @@ class StreamViewerInvitationService:
             path_status,
         )
         return ViewerInvitationPlayback(stream=stream, playback=playback)
+
+    async def get_recordings(self, token: str) -> list[RecordingSegment]:
+        stream = await self.get_stream(token)
+        stream_key = await self._streams_service.get_stream_key(stream.id)
+        return await self._media_recording_service.get_recordings(stream_key)
+
+    async def get_stream(self, token: str):
+        invitation = await self._repository.find_active(_hash_token(token), _utc_now())
+        if invitation is None:
+            raise _invalid_invitation_error()
+
+        return await self._get_private_stream(invitation.stream_id)
 
     async def _get_private_stream(self, stream_id: str):
         stream = await self._streams_service.get_stream(stream_id)

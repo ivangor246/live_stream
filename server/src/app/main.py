@@ -18,6 +18,7 @@ from app.services.auth import AuthService
 from app.services.media import (
     MediaConnectionService,
     MediaPathService,
+    MediaRecordingService,
     MediaStatusService,
 )
 from app.services.media_auth import MediaAuthService, MediaTokenService
@@ -66,10 +67,16 @@ def create_app() -> FastAPI:
         api_url=settings.media_api_url,
         timeout=settings.media_api_timeout,
     )
+    media_recording_service = MediaRecordingService(
+        api_url=settings.media_playback_api_url,
+        timeout=settings.media_api_timeout,
+        token_service=media_token_service,
+    )
     stream_invitation_service = StreamViewerInvitationService(
         repository=stream_invites_repository,
         streams_service=streams_service,
         media_connection_service=media_connection_service,
+        media_recording_service=media_recording_service,
         media_status_service=media_status_service,
         ttl_hours=settings.stream_invite_ttl_hours,
     )
@@ -101,6 +108,7 @@ def create_app() -> FastAPI:
             streams_service,
             database_engine,
             media_connection_service,
+            media_recording_service,
             media_status_service,
             auth_service,
             stream_invitation_service,

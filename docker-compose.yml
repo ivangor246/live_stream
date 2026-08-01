@@ -4,10 +4,12 @@ services:
     environment:
       MTX_AUTHMETHOD: http
       MTX_AUTHHTTPADDRESS: ${MEDIA_AUTH_URL:-http://backend:3000/api/media/auth}
+      MTX_PATHDEFAULTS_RECORDDELETEAFTER: ${MEDIA_RECORD_RETENTION:-30d}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./server/mediamtx.yml:/mediamtx.yml:ro
+      - media-recordings:/recordings
     ports:
       - "${MEDIA_RTMP_PORT:-1935}:1935"
       - "${MEDIA_HLS_PORT:-8888}:8888"
@@ -39,6 +41,7 @@ services:
       MEDIA_RTMP_URL: ${MEDIA_RTMP_URL:-rtmp://localhost:1935}
       MEDIA_HLS_URL: ${MEDIA_HLS_URL:-http://localhost:8888}
       MEDIA_WEBRTC_URL: ${MEDIA_WEBRTC_URL:-http://localhost:8889}
+      MEDIA_PLAYBACK_API_URL: ${MEDIA_PLAYBACK_API_URL:-http://mediamtx:9996}
       MEDIA_API_URL: ${MEDIA_API_URL:-http://mediamtx:9997}
       MEDIA_API_TIMEOUT: ${MEDIA_API_TIMEOUT:-2.0}
       MEDIA_AUTH_SECRET: ${MEDIA_AUTH_SECRET:-local-development-media-secret}
@@ -48,6 +51,7 @@ services:
       AUTH_INVITE_TTL_HOURS: ${AUTH_INVITE_TTL_HOURS:-168}
       STREAM_INVITE_TTL_HOURS: ${STREAM_INVITE_TTL_HOURS:-168}
       AUTH_SECURE_COOKIE: ${AUTH_SECURE_COOKIE:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:
       mediamtx:
         condition: service_started
@@ -66,3 +70,4 @@ services:
 
 volumes:
   postgres-data:
+  media-recordings:

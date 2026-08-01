@@ -14,6 +14,17 @@ hls: yes
 hlsAddress: :8888
 webrtc: yes
 webrtcAddress: :8889
+playback: yes
+playbackAddress: :9996
+
+pathDefaults:
+  # Store each managed stream in the persistent recordings volume.
+  record: yes
+  recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordFormat: fmp4
+  recordPartDuration: 1s
+  recordSegmentDuration: 1h
+  recordDeleteAfter: 30d
 
 # The backend creates paths before a stream starts.
 paths: {}

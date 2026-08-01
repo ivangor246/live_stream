@@ -57,13 +57,20 @@ class MediaAuthService:
         if request.action in {"api", "metrics", "pprof"}:
             return
 
-        stream = await self._streams_repository.find_by_stream_key(request.path)
-        token = request.token or request.password or _get_query_token(request.query)
+        path = request.path or _get_query_value(request.query or "", "path")
+        stream = await self._streams_repository.find_by_stream_key(path)
+        token = request.password or request.token or _get_query_token(request.query or "")
+        is_allowed_status = stream is not None and (
+            stream.status is StreamStatus.LIVE
+            or (
+                request.action == "playback"
+                and stream.status is StreamStatus.FINISHED
+            )
+        )
 
         if (
-            stream is None
-            or stream.status is not StreamStatus.LIVE
-            or not self._token_service.verify(token, request.path, request.action)
+            not is_allowed_status
+            or not self._token_service.verify(token, path, request.action)
         ):
             raise AppError(
                 401,
@@ -73,8 +80,13 @@ class MediaAuthService:
 
 
 def _get_query_token(query: str) -> str:
-    values = parse_qs(query, keep_blank_values=True)
     for key in ("pass", "token"):
-        if values.get(key):
-            return values[key][0]
+        value = _get_query_value(query, key)
+        if value:
+            return value
     return ""
+
+
+def _get_query_value(query: str, key: str) -> str:
+    values = parse_qs(query, keep_blank_values=True)
+    return values.get(key, [""])[0]

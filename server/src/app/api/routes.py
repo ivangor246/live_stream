@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine
+from starlette.background import BackgroundTask
+from starlette.responses import StreamingResponse
 
 from app.core.errors import AppError
 from app.database.session import check_database_connection
@@ -10,10 +14,14 @@ from app.schemas.invitation import (
     StreamViewerInvitation,
     ViewerInvitationPlayback,
 )
-from app.schemas.media import StreamConnection, StreamPlayback
+from app.schemas.media import RecordingSegment, StreamConnection, StreamPlayback
 from app.schemas.stream import CreateStreamRequest, Stream
 from app.services.auth import AuthService
-from app.services.media import MediaConnectionService, MediaStatusService
+from app.services.media import (
+    MediaConnectionService,
+    MediaRecordingService,
+    MediaStatusService,
+)
 from app.services.streams import StreamsService
 from app.services.stream_invites import StreamViewerInvitationService
 from app.api.auth import create_auth_router
@@ -23,6 +31,7 @@ def create_api_router(
     streams_service: StreamsService,
     database_engine: AsyncEngine,
     media_connection_service: MediaConnectionService,
+    media_recording_service: MediaRecordingService,
     media_status_service: MediaStatusService,
     auth_service: AuthService,
     stream_invitation_service: StreamViewerInvitationService,
@@ -51,6 +60,7 @@ def create_api_router(
         router,
         streams_service,
         media_connection_service,
+        media_recording_service,
         media_status_service,
         auth_service,
         stream_invitation_service,
@@ -69,6 +79,7 @@ def _register_stream_read_routes(
     router: APIRouter,
     streams_service: StreamsService,
     media_connection_service: MediaConnectionService,
+    media_recording_service: MediaRecordingService,
     media_status_service: MediaStatusService,
     auth_service: AuthService,
     stream_invitation_service: StreamViewerInvitationService,
@@ -121,11 +132,65 @@ def _register_stream_read_routes(
         )
 
     @router.get(
+        "/streams/{stream_id}/recordings",
+        response_model=list[RecordingSegment],
+        dependencies=[Depends(auth_service.require_user)],
+    )
+    async def get_stream_recordings(stream_id: str) -> list[RecordingSegment]:
+        await streams_service.get_stream(stream_id)
+        stream_key = await streams_service.get_stream_key(stream_id)
+        return await media_recording_service.get_recordings(stream_key)
+
+    @router.get(
+        "/streams/{stream_id}/recordings/playback",
+        dependencies=[Depends(auth_service.require_user)],
+    )
+    async def stream_recording(
+        stream_id: str,
+        request: Request,
+        start: str,
+        duration: Annotated[float, Query(gt=0)],
+    ) -> StreamingResponse:
+        await streams_service.get_stream(stream_id)
+        stream_key = await streams_service.get_stream_key(stream_id)
+        return await _create_recording_response(
+            media_recording_service,
+            stream_key,
+            start,
+            duration,
+            request.headers.get("range"),
+        )
+
+    @router.get(
         "/viewer-invitations/{token}",
         response_model=ViewerInvitationPlayback,
     )
     async def get_viewer_invitation_playback(token: str) -> ViewerInvitationPlayback:
         return await stream_invitation_service.get_playback(token)
+
+    @router.get(
+        "/viewer-invitations/{token}/recordings",
+        response_model=list[RecordingSegment],
+    )
+    async def get_viewer_invitation_recordings(token: str) -> list[RecordingSegment]:
+        return await stream_invitation_service.get_recordings(token)
+
+    @router.get("/viewer-invitations/{token}/recordings/playback")
+    async def stream_viewer_invitation_recording(
+        token: str,
+        request: Request,
+        start: str,
+        duration: Annotated[float, Query(gt=0)],
+    ) -> StreamingResponse:
+        stream = await stream_invitation_service.get_stream(token)
+        stream_key = await streams_service.get_stream_key(stream.id)
+        return await _create_recording_response(
+            media_recording_service,
+            stream_key,
+            start,
+            duration,
+            request.headers.get("range"),
+        )
 
 
 def _register_stream_management_routes(
@@ -191,3 +256,25 @@ def _register_stream_management_routes(
     )
     async def finish_stream(stream_id: str) -> Stream:
         return await streams_service.finish_stream(stream_id)
+
+
+async def _create_recording_response(
+    media_recording_service: MediaRecordingService,
+    stream_key: str,
+    start: str,
+    duration: float,
+    byte_range: str | None,
+) -> StreamingResponse:
+    recording = await media_recording_service.open_recording(
+        stream_key,
+        start,
+        duration,
+        byte_range,
+    )
+    return StreamingResponse(
+        recording.iter_bytes(),
+        status_code=recording.status_code,
+        media_type=recording.content_type,
+        headers=recording.headers,
+        background=BackgroundTask(recording.close),
+    )

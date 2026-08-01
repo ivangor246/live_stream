@@ -4,7 +4,12 @@ from urllib.parse import quote, urlencode
 import httpx
 
 from app.core.errors import AppError
-from app.schemas.media import MediaPathStatus, StreamConnection, StreamPlayback
+from app.schemas.media import (
+    MediaPathStatus,
+    RecordingSegment,
+    StreamConnection,
+    StreamPlayback,
+)
 from app.services.media_auth import MediaTokenService
 
 logger = logging.getLogger(__name__)
@@ -179,6 +184,183 @@ class MediaConnectionService:
             sourceStatus=path_status.source_status,
             sourceProtocol=path_status.source_protocol,
         )
+
+
+class MediaRecordingService:
+    def __init__(
+        self,
+        api_url: str,
+        timeout: float,
+        token_service: MediaTokenService,
+    ) -> None:
+        self._api_url = api_url.rstrip("/")
+        self._timeout = timeout
+        self._token_service = token_service
+
+    async def get_recordings(self, stream_key: str) -> list[RecordingSegment]:
+        token = self._token_service.create(stream_key, "playback")
+        query = urlencode({"path": stream_key})
+        request_url = f"{self._api_url}/list?{query}"
+
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                response = await client.get(request_url, auth=("viewer", token))
+        except httpx.HTTPError as error:
+            logger.warning("Media recording list request failed: %s", error)
+            raise AppError(
+                503,
+                "MEDIA_SERVICE_UNAVAILABLE",
+                "The media server is unavailable",
+            ) from error
+
+        if response.status_code == 404:
+            return []
+
+        if response.is_error:
+            logger.warning(
+                "Media recording list request returned HTTP %s",
+                response.status_code,
+            )
+            raise AppError(
+                503,
+                "MEDIA_RECORDINGS_UNAVAILABLE",
+                "Recordings are unavailable",
+            )
+
+        try:
+            payload = response.json()
+        except ValueError as error:
+            raise AppError(
+                503,
+                "MEDIA_RECORDINGS_UNAVAILABLE",
+                "Recordings are unavailable",
+            ) from error
+
+        if not isinstance(payload, list):
+            raise AppError(
+                503,
+                "MEDIA_RECORDINGS_UNAVAILABLE",
+                "Recordings are unavailable",
+            )
+
+        recordings: list[RecordingSegment] = []
+        for item in payload:
+            recording = self._to_recording(item)
+            if recording is not None:
+                recordings.append(recording)
+
+        return recordings
+
+    async def open_recording(
+        self,
+        stream_key: str,
+        start: str,
+        duration: float,
+        byte_range: str | None,
+    ) -> "MediaRecordingResponse":
+        token = self._token_service.create(stream_key, "playback")
+        query = urlencode(
+            {
+                "path": stream_key,
+                "start": start,
+                "duration": duration,
+                "format": "mp4",
+            },
+        )
+        request_url = f"{self._api_url}/get?{query}"
+        headers = {"Range": byte_range} if byte_range else {}
+        client = httpx.AsyncClient(
+            timeout=self._timeout,
+            auth=("viewer", token),
+        )
+
+        try:
+            request = client.build_request(
+                "GET",
+                request_url,
+                headers=headers,
+            )
+            response = await client.send(request, stream=True)
+        except httpx.HTTPError as error:
+            await client.aclose()
+            logger.warning("Media recording request failed: %s", error)
+            raise AppError(
+                503,
+                "MEDIA_SERVICE_UNAVAILABLE",
+                "The media server is unavailable",
+            ) from error
+
+        if response.is_error:
+            await response.aclose()
+            await client.aclose()
+            if response.status_code == 404:
+                raise AppError(404, "RECORDING_NOT_FOUND", "Recording was not found")
+
+            logger.warning(
+                "Media recording request returned HTTP %s",
+                response.status_code,
+            )
+            raise AppError(
+                503,
+                "MEDIA_RECORDINGS_UNAVAILABLE",
+                "Recordings are unavailable",
+            )
+
+        return MediaRecordingResponse(client, response)
+
+    def _to_recording(
+        self,
+        item: object,
+    ) -> RecordingSegment | None:
+        if not isinstance(item, dict):
+            return None
+
+        start = item.get("start")
+        duration = item.get("duration")
+        if not isinstance(start, str) or not isinstance(duration, (int, float)):
+            return None
+
+        if duration <= 0:
+            return None
+
+        return RecordingSegment(
+            startAt=start,
+            durationSeconds=duration,
+        )
+
+
+class MediaRecordingResponse:
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        response: httpx.Response,
+    ) -> None:
+        self._client = client
+        self._response = response
+
+    @property
+    def content_type(self) -> str:
+        return self._response.headers.get("content-type", "video/mp4")
+
+    @property
+    def headers(self) -> dict[str, str]:
+        return {
+            header: value
+            for header in ("content-length", "content-range", "accept-ranges")
+            if (value := self._response.headers.get(header)) is not None
+        }
+
+    @property
+    def status_code(self) -> int:
+        return self._response.status_code
+
+    async def iter_bytes(self):
+        async for chunk in self._response.aiter_bytes():
+            yield chunk
+
+    async def close(self) -> None:
+        await self._response.aclose()
+        await self._client.aclose()
 
 
 def _raise_media_path_error(code: str, status_code: int) -> None:

@@ -102,9 +102,6 @@ class StreamsService:
                 "Stream is already finished",
             )
 
-        stream_key = await self.get_stream_key(stream_id)
-        await self._media_path_service.delete_path(stream_key)
-
         updated_stream = stream.model_copy(
             update={
                 "status": StreamStatus.FINISHED,

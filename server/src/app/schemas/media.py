@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,16 +10,16 @@ MediaAuthAction = Literal["publish", "read", "playback", "api", "metrics", "ppro
 class MediaAuthRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    user: str = ""
-    password: str = ""
-    token: str = ""
-    ip: str = ""
+    user: str | None = ""
+    password: str | None = ""
+    token: str | None = ""
+    ip: str | None = ""
     action: MediaAuthAction
-    path: str = ""
-    protocol: str = ""
-    id: str = ""
-    query: str = ""
-    user_agent: str = Field(default="", alias="userAgent")
+    path: str | None = ""
+    protocol: str | None = ""
+    id: str | None = ""
+    query: str | None = ""
+    user_agent: str | None = Field(default="", alias="userAgent")
 
 
 class MediaPathStatus(BaseModel):
@@ -42,3 +43,10 @@ class StreamConnection(StreamPlayback):
     rtmp_url: str = Field(alias="rtmpUrl")
     rtmp_publish_url: str = Field(alias="rtmpPublishUrl")
     stream_key: str = Field(alias="streamKey")
+
+
+class RecordingSegment(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    start_at: datetime = Field(alias="startAt")
+    duration_seconds: float = Field(alias="durationSeconds", gt=0)
