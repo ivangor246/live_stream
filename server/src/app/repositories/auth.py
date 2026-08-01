@@ -5,7 +5,7 @@ from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.models import AuthSessionRecord, UserRecord
+from app.database.models import AuthSessionRecord, UserInviteRecord, UserRecord
 
 SessionFactory = Callable[[], AsyncSession]
 
@@ -90,3 +90,102 @@ class PostgresAuthRepository:
             if record is not None:
                 await session.delete(record)
                 await session.commit()
+
+    async def create_invitation(
+        self,
+        token_hash: str,
+        role: str,
+        created_at: datetime,
+        expires_at: datetime,
+    ) -> UserInviteRecord:
+        record = UserInviteRecord(
+            id=str(uuid4()),
+            token_hash=token_hash,
+            role=role,
+            created_at=created_at,
+            expires_at=expires_at,
+            accepted_at=None,
+        )
+
+        async with self._session_factory() as session:
+            session.add(record)
+            await session.commit()
+            await session.refresh(record)
+            return record
+
+    async def find_active_invitation(
+        self,
+        token_hash: str,
+        current_time: datetime,
+    ) -> UserInviteRecord | None:
+        query = select(UserInviteRecord).where(
+            UserInviteRecord.token_hash == token_hash,
+            UserInviteRecord.accepted_at.is_(None),
+            UserInviteRecord.expires_at > current_time,
+        )
+
+        async with self._session_factory() as session:
+            return await session.scalar(query)
+
+    async def find_active_invitations(
+        self,
+        current_time: datetime,
+    ) -> list[UserInviteRecord]:
+        query = (
+            select(UserInviteRecord)
+            .where(
+                UserInviteRecord.accepted_at.is_(None),
+                UserInviteRecord.expires_at > current_time,
+            )
+            .order_by(UserInviteRecord.created_at.desc())
+        )
+
+        async with self._session_factory() as session:
+            return list((await session.scalars(query)).all())
+
+    async def accept_invitation(
+        self,
+        token_hash: str,
+        username: str,
+        password_hash: str,
+        password_salt: str,
+        accepted_at: datetime,
+    ) -> UserRecord | None:
+        query = (
+            select(UserInviteRecord)
+            .where(
+                UserInviteRecord.token_hash == token_hash,
+                UserInviteRecord.accepted_at.is_(None),
+                UserInviteRecord.expires_at > accepted_at,
+            )
+            .with_for_update()
+        )
+
+        async with self._session_factory() as session:
+            invitation = await session.scalar(query)
+            if invitation is None:
+                return None
+
+            user = UserRecord(
+                id=str(uuid4()),
+                username=username,
+                password_hash=password_hash,
+                password_salt=password_salt,
+                role=invitation.role,
+                created_at=accepted_at,
+            )
+            invitation.accepted_at = accepted_at
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+            return user
+
+    async def delete_invitation(self, invitation_id: str) -> bool:
+        async with self._session_factory() as session:
+            invitation = await session.get(UserInviteRecord, invitation_id)
+            if invitation is None or invitation.accepted_at is not None:
+                return False
+
+            await session.delete(invitation)
+            await session.commit()
+            return True

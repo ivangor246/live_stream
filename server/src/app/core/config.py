@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     media_auth_token_ttl_seconds: int = 3600
     auth_cookie_name: str = "live_stream_session"
     auth_session_ttl_days: int = 14
+    auth_invite_ttl_hours: int = 168
     auth_secure_cookie: bool = False
     log_level: str = "INFO"
 

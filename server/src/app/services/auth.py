@@ -13,6 +13,10 @@ from app.schemas.auth import (
     AuthSetupRequest,
     AuthStatus,
     AuthUser,
+    CreatedInvitation,
+    CreateInvitationRequest,
+    Invitation,
+    InvitationAcceptRequest,
 )
 from app.utils.passwords import hash_password, verify_password
 
@@ -23,11 +27,13 @@ class AuthService:
         repository: PostgresAuthRepository,
         cookie_name: str,
         session_ttl_days: int,
+        invite_ttl_hours: int,
         secure_cookie: bool,
     ) -> None:
         self._repository = repository
         self._cookie_name = cookie_name
         self._session_ttl = timedelta(days=session_ttl_days)
+        self._invite_ttl = timedelta(hours=invite_ttl_hours)
         self._secure_cookie = secure_cookie
 
     async def get_status(self, request: Request) -> AuthStatus:
@@ -102,9 +108,84 @@ class AuthService:
     async def logout(self, request: Request, response: Response) -> None:
         token = request.cookies.get(self._cookie_name)
         if token:
-            await self._repository.delete_session(_hash_session_token(token))
+            await self._repository.delete_session(_hash_token(token))
 
         response.delete_cookie(self._cookie_name, path="/")
+
+    async def get_invitation(self, token: str) -> Invitation:
+        invitation = await self._repository.find_active_invitation(
+            _hash_token(token),
+            _utc_now(),
+        )
+        if invitation is None:
+            raise _invalid_invitation_error()
+
+        return _to_invitation(invitation)
+
+    async def get_invitations(self) -> list[Invitation]:
+        invitations = await self._repository.find_active_invitations(_utc_now())
+        return [_to_invitation(invitation) for invitation in invitations]
+
+    async def create_invitation(
+        self,
+        request: CreateInvitationRequest,
+    ) -> CreatedInvitation:
+        token = secrets.token_urlsafe(32)
+        created_at = _utc_now()
+        invitation = await self._repository.create_invitation(
+            token_hash=_hash_token(token),
+            role=request.role,
+            created_at=created_at,
+            expires_at=created_at + self._invite_ttl,
+        )
+        return CreatedInvitation(
+            id=invitation.id,
+            role=invitation.role,
+            createdAt=invitation.created_at,
+            expiresAt=invitation.expires_at,
+            token=token,
+        )
+
+    async def accept_invitation(
+        self,
+        token: str,
+        request: InvitationAcceptRequest,
+        response: Response,
+    ) -> AuthResponse:
+        username = _normalize_username(request.username)
+        if not username:
+            raise AppError(
+                400,
+                "VALIDATION_ERROR",
+                "Username must contain at least one non-space character",
+            )
+
+        if await self._repository.find_user_by_username(username):
+            raise _username_taken_error()
+
+        password_salt, password_hash = hash_password(request.password)
+        accepted_at = _utc_now()
+
+        try:
+            user = await self._repository.accept_invitation(
+                token_hash=_hash_token(token),
+                username=username,
+                password_hash=password_hash,
+                password_salt=password_salt,
+                accepted_at=accepted_at,
+            )
+        except IntegrityError as error:
+            raise _username_taken_error() from error
+
+        if user is None:
+            raise _invalid_invitation_error()
+
+        await self._start_session(user.id, response)
+        return AuthResponse(user=_to_auth_user(user))
+
+    async def delete_invitation(self, invitation_id: str) -> None:
+        if not await self._repository.delete_invitation(invitation_id):
+            raise AppError(404, "INVITATION_NOT_FOUND", "Invitation was not found")
 
     async def require_admin(self, request: Request) -> AuthUser:
         user = await self.require_user(request)
@@ -142,7 +223,7 @@ class AuthService:
         expires_at = created_at + self._session_ttl
 
         await self._repository.create_session(
-            session_id=_hash_session_token(session_token),
+            session_id=_hash_token(session_token),
             user_id=user_id,
             created_at=created_at,
             expires_at=expires_at,
@@ -162,7 +243,7 @@ class AuthService:
             return None
 
         return await self._repository.find_user_by_session(
-            _hash_session_token(token),
+            _hash_token(token),
             _utc_now(),
         )
 
@@ -176,11 +257,20 @@ def _to_auth_user(record) -> AuthUser:
     )
 
 
+def _to_invitation(record) -> Invitation:
+    return Invitation(
+        id=record.id,
+        role=record.role,
+        createdAt=record.created_at,
+        expiresAt=record.expires_at,
+    )
+
+
 def _normalize_username(username: str) -> str:
     return username.strip().lower()
 
 
-def _hash_session_token(token: str) -> str:
+def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
@@ -202,3 +292,11 @@ def _forbidden_error() -> AppError:
         "AUTH_FORBIDDEN",
         "The current account does not have permission for this action",
     )
+
+
+def _invalid_invitation_error() -> AppError:
+    return AppError(404, "INVITATION_INVALID", "Invitation is invalid or expired")
+
+
+def _username_taken_error() -> AppError:
+    return AppError(409, "AUTH_USERNAME_TAKEN", "Username is already in use")

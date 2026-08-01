@@ -3,9 +3,12 @@ import type {
   ApiErrorResponse,
 } from "../shared/api.js";
 import type {
+  AccountInvitation,
   AuthCredentials,
   AuthResponse,
   AuthStatus,
+  CreatedAccountInvitation,
+  InviteRole,
   UserRole,
 } from "../shared/auth.js";
 
@@ -17,6 +20,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isUserRole(value: unknown): value is UserRole {
   return value === "admin" || value === "operator" || value === "viewer";
+}
+
+function isInviteRole(value: unknown): value is InviteRole {
+  return value === "operator" || value === "viewer";
 }
 
 function isAuthUser(value: unknown): boolean {
@@ -46,6 +53,31 @@ function isAuthStatus(value: unknown): value is AuthStatus {
 
 function isAuthResponse(value: unknown): value is AuthResponse {
   return isRecord(value) && isAuthUser(value.user);
+}
+
+function isInvitation(value: unknown): value is AccountInvitation {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    isInviteRole(value.role) &&
+    typeof value.createdAt === "string" &&
+    typeof value.expiresAt === "string"
+  );
+}
+
+function isInvitations(value: unknown): value is AccountInvitation[] {
+  return Array.isArray(value) && value.every(isInvitation);
+}
+
+function isCreatedInvitation(value: unknown): value is CreatedAccountInvitation {
+  if (!isRecord(value) || !isInvitation(value)) {
+    return false;
+  }
+
+  return typeof (value as Record<string, unknown>).token === "string";
 }
 
 function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
@@ -139,5 +171,63 @@ export function logout(): Promise<null> {
     "/api/auth/logout",
     (value: unknown): value is null => value === null,
     { method: "POST" },
+  );
+}
+
+export function getInvitations(
+  signal?: AbortSignal,
+): Promise<AccountInvitation[]> {
+  return request<AccountInvitation[]>(
+    "/api/auth/invitations",
+    isInvitations,
+    signal ? { signal } : undefined,
+  );
+}
+
+export function createInvitation(
+  role: InviteRole,
+): Promise<CreatedAccountInvitation> {
+  return request<CreatedAccountInvitation>(
+    "/api/auth/invitations",
+    isCreatedInvitation,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ role }),
+    },
+  );
+}
+
+export function deleteInvitation(invitationId: string): Promise<null> {
+  const encodedInvitationId = encodeURIComponent(invitationId);
+
+  return request<null>(
+    `/api/auth/invitations/${encodedInvitationId}`,
+    (value: unknown): value is null => value === null,
+    { method: "DELETE" },
+  );
+}
+
+export function getInvitation(
+  token: string,
+  signal?: AbortSignal,
+): Promise<AccountInvitation> {
+  return request<AccountInvitation>(
+    `/api/auth/invitations/${encodeURIComponent(token)}`,
+    isInvitation,
+    signal ? { signal } : undefined,
+  );
+}
+
+export function acceptInvitation(
+  token: string,
+  credentials: AuthCredentials,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    `/api/auth/invitations/${encodeURIComponent(token)}/accept`,
+    isAuthResponse,
+    createCredentialsInit(credentials),
   );
 }

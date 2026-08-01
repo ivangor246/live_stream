@@ -50,6 +50,7 @@ def create_app() -> FastAPI:
         repository=auth_repository,
         cookie_name=settings.auth_cookie_name,
         session_ttl_days=settings.auth_session_ttl_days,
+        invite_ttl_hours=settings.auth_invite_ttl_hours,
         secure_cookie=settings.auth_secure_cookie,
     )
     media_connection_service = MediaConnectionService(

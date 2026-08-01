@@ -4,6 +4,7 @@ import { useAuth } from "./auth/AuthProvider.js";
 import { AppShell } from "./components/layout/AppShell.js";
 import { useI18n } from "./i18n/I18nProvider.js";
 import { AuthPage, AuthUnavailablePage } from "./pages/AuthPage.js";
+import { InvitePage } from "./pages/InvitePage.js";
 import { StreamPage } from "./pages/StreamPage.js";
 import { StreamsPage } from "./pages/StreamsPage.js";
 
@@ -48,7 +49,10 @@ function AuthRouteContent() {
 export default function App() {
   return (
     <AppShell>
-      <AuthRouteContent />
+      <Routes>
+        <Route path="/invite/:token" element={<InvitePage />} />
+        <Route path="*" element={<AuthRouteContent />} />
+      </Routes>
     </AppShell>
   );
 }
