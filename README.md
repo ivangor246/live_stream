@@ -24,8 +24,9 @@ The current release provides:
 - separate frontend, backend, PostgreSQL, and MediaMTX Docker services.
 
 The dashboard prepares MediaMTX connection details and an embedded player for
-each live stream. Source-state synchronization and access control are still
-planned, while the player prefers WebRTC and falls back to HLS.
+each live stream. It also polls the MediaMTX Control API and displays the
+current source status; access control is still planned. The player prefers
+WebRTC and falls back to HLS.
 
 ## Technology
 
@@ -47,6 +48,7 @@ planned, while the player prefers WebRTC and falls back to HLS.
 - Pydantic and pydantic-settings;
 - SQLAlchemy async ORM;
 - asyncpg;
+- httpx;
 - Alembic;
 - PostgreSQL.
 
@@ -112,7 +114,8 @@ Default endpoints:
 - PostgreSQL: `localhost:5432`;
 - MediaMTX RTMP: `localhost:1935`;
 - MediaMTX HLS: `http://localhost:8888`;
-- MediaMTX WebRTC: `http://localhost:8889`.
+- MediaMTX WebRTC: `http://localhost:8889`;
+- MediaMTX Control API: `http://127.0.0.1:9997` (loopback only).
 
 Stop the containers without deleting PostgreSQL data:
 
@@ -172,8 +175,9 @@ make media-down
 ```
 
 For a custom PostgreSQL connection, set `DATABASE_URL` in `server/.env`. For
-Docker Compose, set the corresponding variables in a root `.env` file and use
-the Docker service hostname when the database runs inside Compose.
+the local MediaMTX status endpoint, set `MEDIA_API_URL` to the Control API
+address. For Docker Compose, set the corresponding variables in a root `.env`
+file and use the Docker service hostname when a dependency runs inside Compose.
 
 ## Makefile commands
 
@@ -210,6 +214,10 @@ Run `make help` for the full list:
 | `POST` | `/api/streams/{streamId}/start` | Start a scheduled stream |
 | `POST` | `/api/streams/{streamId}/finish` | Finish a live stream |
 
+The connection response includes `sourceStatus` (`online`, `offline`, or
+`unavailable`) and the detected `sourceProtocol` when MediaMTX has an active
+publisher.
+
 Create a stream with:
 
 ```json
@@ -240,6 +248,8 @@ The API returns stream fields in the frontend contract format:
    RTMP server. The current stream key is the stream UUID.
 3. Publish the stream. MediaMTX creates the path from the stream key and makes
    the HLS and WebRTC links available in the same panel.
+4. When the stream is live, the panel refreshes the source status every five
+   seconds and shows the detected source protocol.
 
 For protocol-specific setup, see the [MediaMTX OBS guide](https://mediamtx.org/docs/publish/obs-studio),
 [HLS guide](https://mediamtx.org/docs/read/hls), and
@@ -307,7 +317,7 @@ page-specific styling.
 ## Current limitations
 
 - no authentication or role separation;
-- no source-state synchronization with MediaMTX;
+- no source-state history, alerts, or automatic stream lifecycle changes;
 - stream keys are currently predictable UUIDs and have no access control;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
