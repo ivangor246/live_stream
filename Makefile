@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 POETRY ?= poetry
 
-.PHONY: help install install-frontend install-backend db-up db-down db-migrate \
+.PHONY: help install install-frontend install-backend db-up db-down db-migrate media-up media-down \
         dev-frontend dev-backend lint build backend-check docker-build docker-up \
         docker-down docker-logs
 
@@ -13,6 +13,8 @@ help:
 		'make db-up            Start the local PostgreSQL service' \
 		'make db-down          Stop the local PostgreSQL service' \
 		'make db-migrate       Apply PostgreSQL migrations' \
+		'make media-up         Start the local MediaMTX service' \
+		'make media-down       Stop the local MediaMTX service' \
 		'make dev-backend      Migrate and start the FastAPI server' \
 		'make lint             Run frontend and backend lint checks' \
 		'make build            Build the frontend' \
@@ -38,6 +40,12 @@ db-down:
 
 db-migrate:
 	cd server && $(POETRY) run alembic upgrade head
+
+media-up:
+	docker compose up -d mediamtx
+
+media-down:
+	docker compose stop mediamtx
 
 dev-frontend:
 	cd client && npm run dev -- --host 0.0.0.0

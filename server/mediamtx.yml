@@ -1,0 +1,9 @@
+# Enable the media protocols used by the self-hosted dashboard.
+api: yes
+apiAddress: 0.0.0.0:9997
+rtmp: yes
+rtmpAddress: :1935
+hls: yes
+hlsAddress: :8888
+webrtc: yes
+webrtcAddress: :8889

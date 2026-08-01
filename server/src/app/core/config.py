@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     cors_origins: str = "*"
     database_url: str = "postgresql+asyncpg://live_stream:live_stream@localhost:5432/live_stream"
     database_echo: bool = False
+    media_rtmp_url: str = "rtmp://localhost:1935"
+    media_hls_url: str = "http://localhost:8888"
+    media_webrtc_url: str = "http://localhost:8889"
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(

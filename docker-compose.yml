@@ -1,4 +1,13 @@
 services:
+  mediamtx:
+    image: bluenviron/mediamtx:1
+    volumes:
+      - ./server/mediamtx.yml:/mediamtx.yml:ro
+    ports:
+      - "${MEDIA_RTMP_PORT:-1935}:1935"
+      - "${MEDIA_HLS_PORT:-8888}:8888"
+      - "${MEDIA_WEBRTC_PORT:-8889}:8889"
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -21,7 +30,12 @@ services:
     environment:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://live_stream:live_stream@postgres:5432/live_stream}
+      MEDIA_RTMP_URL: ${MEDIA_RTMP_URL:-rtmp://localhost:1935}
+      MEDIA_HLS_URL: ${MEDIA_HLS_URL:-http://localhost:8888}
+      MEDIA_WEBRTC_URL: ${MEDIA_WEBRTC_URL:-http://localhost:8889}
     depends_on:
+      mediamtx:
+        condition: service_started
       postgres:
         condition: service_healthy
     ports:
