@@ -17,6 +17,7 @@ The current release provides:
 - stream status filters and sorting;
 - a first-run empty state and confirmation for finishing streams;
 - a MediaMTX service with RTMP publishing and HLS/WebRTC connection details;
+- managed MediaMTX paths created at stream start and removed at stream finish;
 - an embedded WebRTC player with automatic HLS fallback;
 - first-run local administrator setup with cookie-based sessions;
 - protected stream management and dashboard WebSocket access;
@@ -275,11 +276,12 @@ The API returns stream fields in the frontend contract format:
 ## Media workflow
 
 1. Create a stream in the dashboard.
-2. Copy the RTMP URL and stream key from the stream page into OBS as a custom
-   RTMP server. The current stream key is the stream UUID.
-3. Publish the stream. MediaMTX creates the path from the stream key and makes
-   the HLS and WebRTC links available in the same panel.
-4. When the stream is live, the panel refreshes the source status every five
+2. Copy the RTMP URL and random stream key from the stream page into OBS as a
+   custom RTMP server.
+3. Start the stream in the dashboard. The backend creates its MediaMTX path.
+4. Publish the stream. MediaMTX makes the HLS and WebRTC links available in the
+   same panel.
+5. When the stream is live, the panel refreshes the source status every five
    seconds and shows the detected source protocol.
 
 For protocol-specific setup, see the [MediaMTX OBS guide](https://mediamtx.org/docs/publish/obs-studio),
@@ -349,8 +351,8 @@ page-specific styling.
 
 - one local administrator account only; no operator/viewer role separation;
 - no source-state history, alerts, or automatic stream lifecycle changes;
-- MediaMTX media paths are not protected by application authentication;
-- stream keys are currently predictable UUIDs;
+- MediaMTX media paths do not yet require per-stream credentials;
+- media paths are removed only when the operator finishes a stream;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
 - no automated PostgreSQL backup or retention policy;
