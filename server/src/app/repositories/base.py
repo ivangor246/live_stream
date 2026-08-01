@@ -8,7 +8,12 @@ class StreamsRepository(Protocol):
 
     async def find_by_id(self, stream_id: str) -> Stream | None: ...
 
-    async def create(self, title: str, stream_key: str) -> Stream: ...
+    async def create(
+        self,
+        title: str,
+        stream_key: str,
+        is_private: bool,
+    ) -> Stream: ...
 
     async def find_stream_key(self, stream_id: str) -> str | None: ...
 

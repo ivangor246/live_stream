@@ -12,6 +12,7 @@ class StreamRecord(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     stream_key: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_private: Mapped[bool] = mapped_column(nullable=False, default=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     viewer_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reaction_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -57,3 +58,21 @@ class UserInviteRecord(Base):
         index=True,
     )
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class StreamViewerInviteRecord(Base):
+    __tablename__ = "stream_viewer_invites"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    stream_id: Mapped[str] = mapped_column(
+        ForeignKey("streams.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )

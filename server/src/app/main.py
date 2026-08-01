@@ -13,6 +13,7 @@ from app.core.handlers import register_exception_handlers
 from app.database.session import close_database, create_database
 from app.repositories.postgres import PostgresStreamsRepository
 from app.repositories.auth import PostgresAuthRepository
+from app.repositories.stream_invites import PostgresStreamViewerInvitesRepository
 from app.services.auth import AuthService
 from app.services.media import (
     MediaConnectionService,
@@ -21,6 +22,7 @@ from app.services.media import (
 )
 from app.services.media_auth import MediaAuthService, MediaTokenService
 from app.services.streams import StreamsService
+from app.services.stream_invites import StreamViewerInvitationService
 from app.services.websocket import WebSocketManager
 
 logging.basicConfig(level=settings.log_level)
@@ -33,6 +35,7 @@ def create_app() -> FastAPI:
     )
     streams_repository = PostgresStreamsRepository(session_factory)
     auth_repository = PostgresAuthRepository(session_factory)
+    stream_invites_repository = PostgresStreamViewerInvitesRepository(session_factory)
     media_path_service = MediaPathService(
         api_url=settings.media_api_url,
         timeout=settings.media_api_timeout,
@@ -62,6 +65,13 @@ def create_app() -> FastAPI:
     media_status_service = MediaStatusService(
         api_url=settings.media_api_url,
         timeout=settings.media_api_timeout,
+    )
+    stream_invitation_service = StreamViewerInvitationService(
+        repository=stream_invites_repository,
+        streams_service=streams_service,
+        media_connection_service=media_connection_service,
+        media_status_service=media_status_service,
+        ttl_hours=settings.stream_invite_ttl_hours,
     )
     websocket_manager = WebSocketManager(streams_service)
 
@@ -93,6 +103,7 @@ def create_app() -> FastAPI:
             media_connection_service,
             media_status_service,
             auth_service,
+            stream_invitation_service,
         ),
     )
     application.include_router(create_media_router(media_auth_service), prefix="/api")

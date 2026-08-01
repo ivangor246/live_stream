@@ -15,6 +15,7 @@ def _to_stream(record: StreamRecord) -> Stream:
     return Stream(
         id=record.id,
         title=record.title,
+        isPrivate=record.is_private,
         status=StreamStatus(record.status),
         viewerCount=record.viewer_count,
         reactionCount=record.reaction_count,
@@ -55,11 +56,17 @@ class PostgresStreamsRepository:
             record = await session.scalar(query)
             return _to_stream(record) if record else None
 
-    async def create(self, title: str, stream_key: str) -> Stream:
+    async def create(
+        self,
+        title: str,
+        stream_key: str,
+        is_private: bool,
+    ) -> Stream:
         record = StreamRecord(
             id=str(uuid4()),
             stream_key=stream_key,
             title=title,
+            is_private=is_private,
             status=StreamStatus.SCHEDULED.value,
             viewer_count=0,
             reaction_count=0,
@@ -82,6 +89,7 @@ class PostgresStreamsRepository:
                 raise ValueError(f"Stream {stream.id} does not exist")
 
             record.title = stream.title
+            record.is_private = stream.is_private
             record.status = stream.status.value
             record.viewer_count = stream.viewer_count
             record.reaction_count = stream.reaction_count

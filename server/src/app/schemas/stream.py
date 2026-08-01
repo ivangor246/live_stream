@@ -15,6 +15,7 @@ class Stream(BaseModel):
 
     id: str
     title: str
+    is_private: bool = Field(alias="isPrivate")
     status: StreamStatus
     viewer_count: int = Field(alias="viewerCount", ge=0)
     reaction_count: int = Field(alias="reactionCount", ge=0)
@@ -27,6 +28,7 @@ class CreateStreamRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     title: str = Field(min_length=3, max_length=100)
+    is_private: bool = Field(default=False, alias="isPrivate")
 
     @field_validator("title", mode="before")
     @classmethod
