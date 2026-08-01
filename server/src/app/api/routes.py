@@ -5,13 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from app.core.errors import AppError
 from app.database.session import check_database_connection
 from app.schemas.api import HealthResponse, ReadinessResponse
+from app.schemas.media import StreamConnection
 from app.schemas.stream import CreateStreamRequest, Stream
+from app.services.media import MediaConnectionService
 from app.services.streams import StreamsService
 
 
 def create_api_router(
     streams_service: StreamsService,
     database_engine: AsyncEngine,
+    media_connection_service: MediaConnectionService,
 ) -> APIRouter:
     router = APIRouter(prefix="/api")
 
@@ -39,6 +42,11 @@ def create_api_router(
     @router.get("/streams/{stream_id}", response_model=Stream)
     async def get_stream(stream_id: str) -> Stream:
         return await streams_service.get_stream(stream_id)
+
+    @router.get("/streams/{stream_id}/connection", response_model=StreamConnection)
+    async def get_stream_connection(stream_id: str) -> StreamConnection:
+        await streams_service.get_stream(stream_id)
+        return media_connection_service.get_connection(stream_id)
 
     @router.post(
         "/streams",
