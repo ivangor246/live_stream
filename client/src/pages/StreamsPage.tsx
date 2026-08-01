@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { Stream } from "../shared/stream.js";
 import {
@@ -10,7 +10,13 @@ import {
 import { localizeError } from "../i18n/errorMessages.js";
 import { useI18n } from "../i18n/I18nProvider.js";
 import { CreateStreamForm } from "../components/CreateStreamForm.js";
+import {
+  StreamFilters,
+  type StreamFilter,
+  type StreamSort,
+} from "../components/StreamFilters.js";
 import { StreamCard } from "../components/StreamCard.js";
+import { Button } from "../components/ui/Button.js";
 
 type StreamStatusAction = (streamId: string) => Promise<Stream>;
 
@@ -19,12 +25,33 @@ function isAbortError(error: unknown): boolean {
 }
 
 export function StreamsPage() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [streams, setStreams] = useState<Stream[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [updatingStreamId, setUpdatingStreamId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<StreamFilter>("all");
+  const [sort, setSort] = useState<StreamSort>("newest");
+
+  const visibleStreams = useMemo(() => {
+    const filteredStreams =
+      filter === "all"
+        ? streams
+        : streams.filter((stream) => stream.status === filter);
+
+    return [...filteredStreams].sort((left, right) => {
+      if (sort === "title") {
+        return left.title.localeCompare(right.title, locale);
+      }
+
+      const leftDate = new Date(left.createdAt).getTime();
+      const rightDate = new Date(right.createdAt).getTime();
+      const direction = sort === "newest" ? -1 : 1;
+
+      return (leftDate - rightDate) * direction;
+    });
+  }, [filter, locale, sort, streams]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -111,7 +138,17 @@ export function StreamsPage() {
       <CreateStreamForm onCreate={handleCreate} />
 
       <section className="streams-section">
-        <h2>{t("streams.heading")}</h2>
+        <header className="streams-section__header">
+          <h2>{t("streams.heading")}</h2>
+          {!isLoading && !loadError && streams.length > 0 && (
+            <span className="streams-count">
+              {t("streams.count", {
+                visible: visibleStreams.length,
+                total: streams.length,
+              })}
+            </span>
+          )}
+        </header>
 
         {isLoading && <p>{t("streams.loading")}</p>}
 
@@ -124,21 +161,53 @@ export function StreamsPage() {
         )}
 
         {!isLoading && !loadError && streams.length === 0 && (
-          <p>{t("streams.empty")}</p>
+          <div className="empty-state">
+            <p>{t("streams.empty")}</p>
+            <p>{t("streams.emptyHint")}</p>
+          </div>
         )}
 
-        {!isLoading && streams.length > 0 && (
-          <div className="streams-grid">
-            {streams.map((stream) => (
-              <StreamCard
-                key={stream.id}
-                stream={stream}
-                isUpdating={updatingStreamId === stream.id}
-                onStart={handleStart}
-                onFinish={handleFinish}
-              />
-            ))}
-          </div>
+        {!isLoading && !loadError && streams.length > 0 && (
+          <>
+            <StreamFilters
+              filter={filter}
+              sort={sort}
+              hasChanges={filter !== "all" || sort !== "newest"}
+              onFilterChange={setFilter}
+              onSortChange={setSort}
+              onReset={() => {
+                setFilter("all");
+                setSort("newest");
+              }}
+            />
+
+            {visibleStreams.length === 0 ? (
+              <div className="empty-state">
+                <p>{t("streams.noMatches")}</p>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setFilter("all");
+                    setSort("newest");
+                  }}
+                >
+                  {t("streams.resetFilters")}
+                </Button>
+              </div>
+            ) : (
+              <div className="streams-grid">
+                {visibleStreams.map((stream) => (
+                  <StreamCard
+                    key={stream.id}
+                    stream={stream}
+                    isUpdating={updatingStreamId === stream.id}
+                    onStart={handleStart}
+                    onFinish={handleFinish}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>

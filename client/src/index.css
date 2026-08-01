@@ -388,6 +388,75 @@ a:focus-visible {
   padding: 1.25rem;
 }
 
+.streams-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.streams-section__header h2 {
+  margin-bottom: 0;
+}
+
+.streams-count {
+  color: var(--color-text-soft);
+  font-size: 0.85rem;
+}
+
+.stream-filters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  box-shadow: none;
+}
+
+.stream-filters__field {
+  display: grid;
+  min-width: 10rem;
+  gap: 0.3rem;
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stream-filters__field select {
+  min-height: 2.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.4rem 0.6rem;
+  color: var(--color-text);
+  background: var(--color-surface-elevated);
+}
+
+.stream-filters__summary {
+  flex: 1 1 10rem;
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+}
+
+.empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 0.4rem;
+  padding: 1rem 0;
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--color-text-soft);
+}
+
+.empty-state p:first-child {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
 .streams-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
@@ -628,6 +697,25 @@ dd {
 
   .create-form {
     grid-template-columns: 1fr;
+  }
+
+  .streams-section__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .stream-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .stream-filters__field {
+    width: 100%;
+  }
+
+  .stream-filters__summary {
+    flex-basis: auto;
   }
 
   .create-form > * {
