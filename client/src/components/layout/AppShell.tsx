@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { getReadiness } from "../../api/streamsApi.js";
 import { useI18n } from "../../i18n/I18nProvider.js";
 import { LanguageSwitcher } from "./LanguageSwitcher.js";
+import { SystemStatus, type SystemStatusState } from "./SystemStatus.js";
 import { ThemeSwitcher } from "./ThemeSwitcher.js";
 
 interface AppShellProps {
@@ -11,6 +13,36 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const { locale, setLocale, t } = useI18n();
+  const [systemStatus, setSystemStatus] =
+    useState<SystemStatusState>("checking");
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    async function checkSystemStatus(): Promise<void> {
+      try {
+        await getReadiness(abortController.signal);
+
+        if (!abortController.signal.aborted) {
+          setSystemStatus("ready");
+        }
+      } catch {
+        if (!abortController.signal.aborted) {
+          setSystemStatus("unavailable");
+        }
+      }
+    }
+
+    void checkSystemStatus();
+    const intervalId = window.setInterval(() => {
+      void checkSystemStatus();
+    }, 30_000);
+
+    return () => {
+      abortController.abort();
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   return (
     <div className="app-shell">
@@ -24,6 +56,7 @@ export function AppShell({ children }: AppShellProps) {
           </Link>
 
           <div className="app-header__controls">
+            <SystemStatus status={systemStatus} />
             <LanguageSwitcher locale={locale} onChange={setLocale} />
             <ThemeSwitcher />
           </div>

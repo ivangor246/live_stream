@@ -172,6 +172,33 @@ h2 {
   gap: 0.5rem;
 }
 
+.system-status {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.system-status__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: var(--color-warning);
+}
+
+.system-status--ready .system-status__dot {
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 16%, transparent);
+}
+
+.system-status--unavailable .system-status__dot {
+  background: var(--color-danger);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-danger) 14%, transparent);
+}
+
 .language-switcher select {
   min-height: 2.25rem;
   border: 1px solid var(--color-border);
@@ -596,6 +623,7 @@ dd {
   .app-header__controls {
     width: 100%;
     justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
   .create-form {

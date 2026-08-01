@@ -5,6 +5,7 @@ import type {
   CreateStreamResponse,
   GetStreamResponse,
   GetStreamsResponse,
+  ReadinessResponse,
 } from "../shared/api.js";
 
 import type { Stream, StreamStatus } from "../shared/stream.js";
@@ -61,6 +62,14 @@ function isStreams(value: unknown): value is GetStreamsResponse {
   return Array.isArray(value) && value.every(isStream);
 }
 
+function isReadinessResponse(value: unknown): value is ReadinessResponse {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return value.status === "ok" && value.database === "ok";
+}
+
 function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
   if (!isRecord(value) || !isRecord(value.error)) {
     return false;
@@ -115,6 +124,16 @@ export function getStreams(signal?: AbortSignal): Promise<GetStreamsResponse> {
   return request<GetStreamsResponse>(
     "/api/streams",
     isStreams,
+    createSignalInit(signal),
+  );
+}
+
+export function getReadiness(
+  signal?: AbortSignal,
+): Promise<ReadinessResponse> {
+  return request<ReadinessResponse>(
+    "/api/ready",
+    isReadinessResponse,
     createSignalInit(signal),
   );
 }
