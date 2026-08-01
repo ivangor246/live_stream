@@ -86,9 +86,13 @@ export function StreamsPage() {
     };
   }, [t]);
 
-  const handleCreate = useCallback(async (title: string): Promise<void> => {
+  const handleCreate = useCallback(async (
+    title: string,
+    isPrivate: boolean,
+  ): Promise<void> => {
     const createdStream = await createStreamRequest({
       title,
+      isPrivate,
     });
 
     setStreams((currentStreams) => [createdStream, ...currentStreams]);

@@ -32,7 +32,12 @@ export function StreamCard({
     <Card as="article" className={`stream-card stream-card--${stream.status}`}>
       <header className="stream-card__header">
         <h2>{stream.title}</h2>
-        <StatusBadge status={stream.status} label={t(statusKeys[stream.status])} />
+        <div className="stream-card__badges">
+          {stream.isPrivate && (
+            <span className="privacy-badge">{t("streams.privateBadge")}</span>
+          )}
+          <StatusBadge status={stream.status} label={t(statusKeys[stream.status])} />
+        </div>
       </header>
 
       <dl className="stream-card__stats">

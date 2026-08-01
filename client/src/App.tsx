@@ -7,6 +7,7 @@ import { AuthPage, AuthUnavailablePage } from "./pages/AuthPage.js";
 import { InvitePage } from "./pages/InvitePage.js";
 import { StreamPage } from "./pages/StreamPage.js";
 import { StreamsPage } from "./pages/StreamsPage.js";
+import { ViewerStreamPage } from "./pages/ViewerStreamPage.js";
 
 function AuthLoadingPage() {
   const { t } = useI18n();
@@ -51,6 +52,7 @@ export default function App() {
     <AppShell>
       <Routes>
         <Route path="/invite/:token" element={<InvitePage />} />
+        <Route path="/watch/:token" element={<ViewerStreamPage />} />
         <Route path="*" element={<AuthRouteContent />} />
       </Routes>
     </AppShell>

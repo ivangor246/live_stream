@@ -320,7 +320,32 @@ h2 {
   font-weight: 700;
 }
 
-.invitation-panel {
+.create-form__checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  cursor: pointer;
+}
+
+.create-form__checkbox input {
+  width: auto;
+  min-height: auto;
+  margin-top: 0.2rem;
+  accent-color: var(--color-accent);
+}
+
+.create-form__checkbox span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.create-form__checkbox small {
+  color: var(--color-text-soft);
+  font-weight: 500;
+}
+
+.invitation-panel,
+.viewer-access-panel {
   display: grid;
   gap: 1rem;
   padding: 1.25rem;
@@ -328,7 +353,10 @@ h2 {
 
 .invitation-panel header p,
 .invitation-panel__list > p,
-.invitation-panel__list small {
+.invitation-panel__list small,
+.viewer-access-panel header p,
+.viewer-access-panel__list > p,
+.viewer-access-panel__list small {
   margin-bottom: 0;
   color: var(--color-text-soft);
 }
@@ -362,13 +390,32 @@ h2 {
   gap: 0.65rem;
 }
 
+.viewer-access-panel__list {
+  display: grid;
+  gap: 0.65rem;
+}
+
 .invitation-panel__list h3 {
   margin: 0;
   color: var(--color-heading);
   font-size: 0.95rem;
 }
 
+.viewer-access-panel__list h3 {
+  margin: 0;
+  color: var(--color-heading);
+  font-size: 0.95rem;
+}
+
 .invitation-panel__list ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.viewer-access-panel__list ul {
   display: grid;
   gap: 0.5rem;
   margin: 0;
@@ -386,7 +433,22 @@ h2 {
   background: var(--color-surface-muted);
 }
 
+.viewer-access-panel__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: var(--radius-md);
+  padding: 0.7rem;
+  background: var(--color-surface-muted);
+}
+
 .invitation-panel__list li span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.viewer-access-panel__list li span {
   display: grid;
   gap: 0.2rem;
 }
@@ -606,6 +668,23 @@ a:focus-visible {
 .stream-card__header h2 {
   margin-bottom: 0;
   overflow-wrap: anywhere;
+}
+
+.stream-card__badges {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.privacy-badge {
+  border-radius: 999px;
+  padding: 0.3rem 0.55rem;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  font-size: 0.75rem;
+  font-weight: 750;
 }
 
 .status-badge {
@@ -950,6 +1029,7 @@ dd {
     flex-direction: column;
   }
 
+  .stream-card__badges,
   .status-badge {
     width: fit-content;
   }

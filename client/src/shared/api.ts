@@ -1,4 +1,7 @@
-import type { Stream } from "./stream.js";
+import type {
+  Stream,
+  StreamViewerInvitation,
+} from "./stream.js";
 
 export interface ReadinessResponse {
   status: "ok";
@@ -21,7 +24,7 @@ export interface StreamConnection extends StreamPlayback {
   streamKey: string;
 }
 
-export type CreateStreamRequest = Pick<Stream, "title">;
+export type CreateStreamRequest = Pick<Stream, "title" | "isPrivate">;
 
 export type CreateStreamResponse = Stream;
 
@@ -30,6 +33,13 @@ export type GetStreamsResponse = Stream[];
 export type GetStreamResponse = Stream;
 
 export type ChangeStreamStatusResponse = Stream;
+
+export interface ViewerInvitationPlayback {
+  stream: Stream;
+  playback: StreamPlayback;
+}
+
+export type GetStreamViewerInvitationsResponse = StreamViewerInvitation[];
 
 export interface ApiErrorResponse {
   error: {

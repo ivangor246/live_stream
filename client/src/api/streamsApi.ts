@@ -5,13 +5,20 @@ import type {
   CreateStreamResponse,
   GetStreamResponse,
   GetStreamsResponse,
+  GetStreamViewerInvitationsResponse,
   ReadinessResponse,
   MediaSourceStatus,
   StreamConnection,
   StreamPlayback,
+  ViewerInvitationPlayback,
 } from "../shared/api.js";
 
-import type { Stream, StreamStatus } from "../shared/stream.js";
+import type {
+  CreatedStreamViewerInvitation,
+  Stream,
+  StreamStatus,
+  StreamViewerInvitation,
+} from "../shared/stream.js";
 
 type ResponseValidator<T> = (value: unknown) => value is T;
 
@@ -48,6 +55,7 @@ function isStream(value: unknown): value is Stream {
   return (
     typeof value.id === "string" &&
     typeof value.title === "string" &&
+    typeof value.isPrivate === "boolean" &&
     isStreamStatus(value.status) &&
     typeof value.viewerCount === "number" &&
     Number.isInteger(value.viewerCount) &&
@@ -59,6 +67,37 @@ function isStream(value: unknown): value is Stream {
     isNullableString(value.startedAt) &&
     isNullableString(value.finishedAt)
   );
+}
+
+function isStreamViewerInvitation(
+  value: unknown,
+): value is StreamViewerInvitation {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.streamId === "string" &&
+    typeof value.createdAt === "string" &&
+    typeof value.expiresAt === "string"
+  );
+}
+
+function isCreatedStreamViewerInvitation(
+  value: unknown,
+): value is CreatedStreamViewerInvitation {
+  if (!isRecord(value) || !isStreamViewerInvitation(value)) {
+    return false;
+  }
+
+  return typeof value.token === "string";
+}
+
+function isStreamViewerInvitations(
+  value: unknown,
+): value is GetStreamViewerInvitationsResponse {
+  return Array.isArray(value) && value.every(isStreamViewerInvitation);
 }
 
 function isStreams(value: unknown): value is GetStreamsResponse {
@@ -102,6 +141,16 @@ function isStreamConnection(value: unknown): value is StreamConnection {
     typeof record.rtmpPublishUrl === "string" &&
     typeof record.streamKey === "string"
   );
+}
+
+function isViewerInvitationPlayback(
+  value: unknown,
+): value is ViewerInvitationPlayback {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return isStream(value.stream) && isStreamPlayback(value.playback);
 }
 
 function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
@@ -207,6 +256,75 @@ export function getStreamPlayback(
   return request<StreamPlayback>(
     `/api/streams/${encodedStreamId}/playback`,
     isStreamPlayback,
+    createSignalInit(signal),
+  );
+}
+
+export function getStreamViewerInvitations(
+  streamId: string,
+  signal?: AbortSignal,
+): Promise<GetStreamViewerInvitationsResponse> {
+  const encodedStreamId = encodeURIComponent(streamId);
+
+  return request<GetStreamViewerInvitationsResponse>(
+    `/api/streams/${encodedStreamId}/viewer-invitations`,
+    isStreamViewerInvitations,
+    createSignalInit(signal),
+  );
+}
+
+export function createStreamViewerInvitation(
+  streamId: string,
+): Promise<CreatedStreamViewerInvitation> {
+  const encodedStreamId = encodeURIComponent(streamId);
+
+  return request<CreatedStreamViewerInvitation>(
+    `/api/streams/${encodedStreamId}/viewer-invitations`,
+    isCreatedStreamViewerInvitation,
+    { method: "POST" },
+  );
+}
+
+export async function deleteStreamViewerInvitation(
+  streamId: string,
+  invitationId: string,
+): Promise<void> {
+  const encodedStreamId = encodeURIComponent(streamId);
+  const encodedInvitationId = encodeURIComponent(invitationId);
+  const response = await fetch(
+    `/api/streams/${encodedStreamId}/viewer-invitations/${encodedInvitationId}`,
+    { method: "DELETE" },
+  );
+
+  if (response.status === 204) {
+    return;
+  }
+
+  const responseBody: unknown = await response.json();
+  if (isApiErrorResponse(responseBody)) {
+    throw new ApiError(
+      response.status,
+      responseBody.error.code,
+      responseBody.error.message,
+    );
+  }
+
+  throw new ApiError(
+    response.status,
+    "UNKNOWN_API_ERROR",
+    `Request failed with status ${response.status}`,
+  );
+}
+
+export function getViewerInvitationPlayback(
+  token: string,
+  signal?: AbortSignal,
+): Promise<ViewerInvitationPlayback> {
+  const encodedToken = encodeURIComponent(token);
+
+  return request<ViewerInvitationPlayback>(
+    `/api/viewer-invitations/${encodedToken}`,
+    isViewerInvitationPlayback,
     createSignalInit(signal),
   );
 }

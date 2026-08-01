@@ -23,6 +23,7 @@ import { ReactionPanel } from "../components/ReactionPanel.js";
 import { StreamConnectionPanel } from "../components/StreamConnectionPanel.js";
 import { StreamPlayer } from "../components/StreamPlayer.js";
 import { StreamStatistics } from "../components/StreamStatistics.js";
+import { ViewerAccessPanel } from "../components/ViewerAccessPanel.js";
 import { Button } from "../components/ui/Button.js";
 import { ButtonLink } from "../components/ui/ButtonLink.js";
 import { useStreamSocket } from "../hooks/useStreamSocket.js";
@@ -101,6 +102,10 @@ function StreamContent({
       <StreamPlayer status={streamStatus} connection={playback} />
 
       {canManage && connection && <StreamConnectionPanel connection={connection} />}
+
+      {canManage && stream.isPrivate && (
+        <ViewerAccessPanel streamId={stream.id} />
+      )}
 
       {connectionError && (
         <p role="alert">

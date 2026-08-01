@@ -6,12 +6,13 @@ import { Button } from "./ui/Button.js";
 
 interface CreateStreamFormState {
   title: string;
+  isPrivate: boolean;
   isSubmitting: boolean;
   error: string | null;
 }
 
 interface CreateStreamFormProps {
-  onCreate: (title: string) => Promise<void>;
+  onCreate: (title: string, isPrivate: boolean) => Promise<void>;
 }
 
 function validateTitle(title: string): TranslationKey | null {
@@ -32,6 +33,7 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
   const { t } = useI18n();
   const [formState, setFormState] = useState<CreateStreamFormState>({
     title: "",
+    isPrivate: false,
     isSubmitting: false,
     error: null,
   });
@@ -61,10 +63,11 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
     }));
 
     try {
-      await onCreate(trimmedTitle);
+      await onCreate(trimmedTitle, formState.isPrivate);
 
       setFormState({
         title: "",
+        isPrivate: false,
         isSubmitting: false,
         error: null,
       });
@@ -99,6 +102,27 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
           }));
         }}
       />
+
+      <label className="create-form__checkbox" htmlFor="stream-private">
+        <input
+          id="stream-private"
+          name="isPrivate"
+          type="checkbox"
+          checked={formState.isPrivate}
+          disabled={formState.isSubmitting}
+          onChange={(event) => {
+            setFormState((currentState) => ({
+              ...currentState,
+              isPrivate: event.target.checked,
+              error: null,
+            }));
+          }}
+        />
+        <span>
+          <strong>{t("streams.privateLabel")}</strong>
+          <small>{t("streams.privateDescription")}</small>
+        </span>
+      </label>
 
       {formState.error && <p role="alert">{formState.error}</p>}
 
