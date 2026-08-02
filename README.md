@@ -407,6 +407,25 @@ requests and pushes to `main`. The smoke test waits for PostgreSQL migrations
 and verifies the backend readiness endpoint through both the backend and the
 frontend proxy.
 
+## Release images
+
+Push a semantic version tag such as `v0.1.0` to publish both component images
+to GitHub Container Registry:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow publishes
+`ghcr.io/ivangor246/live_stream/backend:0.1.0` and
+`ghcr.io/ivangor246/live_stream/frontend:0.1.0`. Stable releases also receive
+the `latest` tag; pre-releases retain only their full version tag. The workflow
+uses GitHub's short-lived `GITHUB_TOKEN` with `packages: write` permission and
+adds the source OCI label so the packages remain associated with this
+repository. See GitHub's [container publishing guide](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images)
+and [Container registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+
 ## Makefile commands
 
 Run `make help` for the full list:

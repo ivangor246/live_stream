@@ -53,14 +53,15 @@ jobs:
         run: docker compose up --build -d
       - name: Wait for the backend
         run: |
-          for attempt in {1..30}; do
-            if curl --fail --silent --show-error http://localhost:3000/api/ready; then
-              exit 0
+          attempt=0
+          until curl --fail --silent --show-error http://localhost:3000/api/ready; do
+            attempt=$((attempt + 1))
+            if [ "$attempt" -ge 30 ]; then
+              docker compose logs
+              exit 1
             fi
             sleep 2
           done
-          docker compose logs
-          exit 1
       - name: Check frontend proxy and service status
         run: |
           curl --fail --silent --show-error http://localhost:8080/api/health
