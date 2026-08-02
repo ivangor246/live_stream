@@ -39,7 +39,7 @@ class MediaPathService:
 
                 response = await client.post(add_url, json={"source": "publisher"})
         except httpx.HTTPError as error:
-            logger.warning("MediaMTX path creation request failed: %s", error)
+            logger.warning("MediaMTX path creation request failed")
             raise AppError(
                 503,
                 "MEDIA_SERVICE_UNAVAILABLE",
@@ -59,7 +59,7 @@ class MediaPathService:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
                 response = await client.delete(request_url)
         except httpx.HTTPError as error:
-            logger.warning("MediaMTX path deletion request failed: %s", error)
+            logger.warning("MediaMTX path deletion request failed")
             raise AppError(
                 503,
                 "MEDIA_SERVICE_UNAVAILABLE",
@@ -92,8 +92,8 @@ class MediaStatusService:
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
                 response = await client.get(request_url)
-        except httpx.HTTPError as error:
-            logger.debug("MediaMTX status request failed: %s", error)
+        except httpx.HTTPError:
+            logger.debug("MediaMTX status request failed")
             return MediaPathStatus(sourceStatus="unavailable")
 
         if response.status_code == 404:
@@ -206,7 +206,7 @@ class MediaRecordingService:
             async with httpx.AsyncClient(timeout=self._timeout) as client:
                 response = await client.get(request_url, auth=("viewer", token))
         except httpx.HTTPError as error:
-            logger.warning("Media recording list request failed: %s", error)
+            logger.warning("Media recording list request failed")
             raise AppError(
                 503,
                 "MEDIA_SERVICE_UNAVAILABLE",
@@ -283,7 +283,7 @@ class MediaRecordingService:
             response = await client.send(request, stream=True)
         except httpx.HTTPError as error:
             await client.aclose()
-            logger.warning("Media recording request failed: %s", error)
+            logger.warning("Media recording request failed")
             raise AppError(
                 503,
                 "MEDIA_SERVICE_UNAVAILABLE",

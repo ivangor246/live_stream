@@ -1,4 +1,3 @@
-import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -10,6 +9,7 @@ from app.api.media import create_media_router
 from app.api.websocket import register_websocket_route
 from app.core.config import settings
 from app.core.handlers import register_exception_handlers
+from app.core.logging import configure_logging, log_http_request
 from app.database.session import close_database, create_database
 from app.repositories.postgres import PostgresStreamsRepository
 from app.repositories.auth import PostgresAuthRepository
@@ -27,7 +27,7 @@ from app.services.streams import StreamsService
 from app.services.stream_invites import StreamViewerInvitationService
 from app.services.websocket import WebSocketManager
 
-logging.basicConfig(level=settings.log_level)
+configure_logging(settings.log_level)
 
 
 def create_app() -> FastAPI:
@@ -103,6 +103,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    application.middleware("http")(log_http_request)
 
     register_exception_handlers(application)
     application.include_router(

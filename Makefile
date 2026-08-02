@@ -55,7 +55,7 @@ dev-frontend:
 	cd client && npm run dev -- --host 0.0.0.0
 
 dev-backend:
-	cd server && $(POETRY) run alembic upgrade head && $(POETRY) run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
+	cd server && $(POETRY) run alembic upgrade head && $(POETRY) run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000 --no-access-log
 
 lint:
 	cd client && npm run lint
