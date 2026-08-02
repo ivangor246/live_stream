@@ -2,7 +2,7 @@ from collections.abc import Callable
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models import AuthSessionRecord, UserInviteRecord, UserRecord
@@ -59,6 +59,7 @@ class PostgresAuthRepository:
             .where(
                 AuthSessionRecord.id == session_id,
                 AuthSessionRecord.expires_at > current_time,
+                UserRecord.is_active.is_(True),
             )
         )
 
@@ -82,6 +83,32 @@ class PostgresAuthRepository:
         async with self._session_factory() as session:
             session.add(record)
             await session.commit()
+
+    async def find_users(self) -> list[UserRecord]:
+        query = select(UserRecord).order_by(UserRecord.created_at.asc())
+
+        async with self._session_factory() as session:
+            return list((await session.scalars(query)).all())
+
+    async def update_user_active(
+        self,
+        user_id: str,
+        is_active: bool,
+    ) -> UserRecord | None:
+        async with self._session_factory() as session:
+            record = await session.get(UserRecord, user_id)
+            if record is None:
+                return None
+
+            record.is_active = is_active
+            if not is_active:
+                await session.execute(
+                    delete(AuthSessionRecord).where(AuthSessionRecord.user_id == user_id),
+                )
+
+            await session.commit()
+            await session.refresh(record)
+            return record
 
     async def delete_session(self, session_id: str) -> None:
         async with self._session_factory() as session:

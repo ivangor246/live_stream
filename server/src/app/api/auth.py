@@ -5,10 +5,13 @@ from app.schemas.auth import (
     AuthResponse,
     AuthSetupRequest,
     AuthStatus,
+    AuthUser,
     CreatedInvitation,
     CreateInvitationRequest,
     Invitation,
     InvitationAcceptRequest,
+    ManagedUser,
+    UpdateUserRequest,
 )
 from app.services.auth import AuthService
 
@@ -41,6 +44,8 @@ def create_auth_router(auth_service: AuthService) -> APIRouter:
     @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
     async def logout(request: Request, response: Response) -> None:
         await auth_service.logout(request, response)
+
+    _register_user_routes(router, auth_service)
 
     @router.get(
         "/invitations",
@@ -82,3 +87,19 @@ def create_auth_router(auth_service: AuthService) -> APIRouter:
         return await auth_service.accept_invitation(token, request, response)
 
     return router
+
+
+def _register_user_routes(router: APIRouter, auth_service: AuthService) -> None:
+    @router.get("/users", response_model=list[ManagedUser])
+    async def get_users(
+        _: AuthUser = Depends(auth_service.require_admin),
+    ) -> list[ManagedUser]:
+        return await auth_service.get_users()
+
+    @router.patch("/users/{user_id}", response_model=ManagedUser)
+    async def update_user(
+        user_id: str,
+        request: UpdateUserRequest,
+        current_user: AuthUser = Depends(auth_service.require_admin),
+    ) -> ManagedUser:
+        return await auth_service.update_user(user_id, request, current_user)

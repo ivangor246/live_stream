@@ -17,6 +17,8 @@ from app.schemas.auth import (
     CreateInvitationRequest,
     Invitation,
     InvitationAcceptRequest,
+    ManagedUser,
+    UpdateUserRequest,
 )
 from app.utils.passwords import hash_password, verify_password
 
@@ -91,7 +93,7 @@ class AuthService:
         username = _normalize_username(request.username)
         user = await self._repository.find_user_by_username(username)
 
-        if user is None or not verify_password(
+        if user is None or not user.is_active or not verify_password(
             request.password,
             user.password_salt,
             user.password_hash,
@@ -187,6 +189,29 @@ class AuthService:
         if not await self._repository.delete_invitation(invitation_id):
             raise AppError(404, "INVITATION_NOT_FOUND", "Invitation was not found")
 
+    async def get_users(self) -> list[ManagedUser]:
+        users = await self._repository.find_users()
+        return [_to_managed_user(user) for user in users]
+
+    async def update_user(
+        self,
+        user_id: str,
+        request: UpdateUserRequest,
+        current_user: AuthUser,
+    ) -> ManagedUser:
+        if user_id == current_user.id and not request.is_active:
+            raise AppError(
+                409,
+                "AUTH_SELF_DEACTIVATION",
+                "Administrators cannot deactivate their own account",
+            )
+
+        user = await self._repository.update_user_active(user_id, request.is_active)
+        if user is None:
+            raise AppError(404, "AUTH_USER_NOT_FOUND", "User was not found")
+
+        return _to_managed_user(user)
+
     async def require_admin(self, request: Request) -> AuthUser:
         user = await self.require_user(request)
         if user.role != "admin":
@@ -253,6 +278,16 @@ def _to_auth_user(record) -> AuthUser:
         id=record.id,
         username=record.username,
         role=record.role,
+        createdAt=record.created_at,
+    )
+
+
+def _to_managed_user(record) -> ManagedUser:
+    return ManagedUser(
+        id=record.id,
+        username=record.username,
+        role=record.role,
+        isActive=record.is_active,
         createdAt=record.created_at,
     )
 

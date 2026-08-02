@@ -30,6 +30,16 @@ class AuthResponse(BaseModel):
     user: AuthUser
 
 
+class ManagedUser(AuthUser):
+    is_active: bool = Field(alias="isActive")
+
+
+class UpdateUserRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    is_active: bool = Field(alias="isActive")
+
+
 class AuthSetupRequest(BaseModel):
     username: str = Field(min_length=3, max_length=80)
     password: str = Field(min_length=12, max_length=256)
