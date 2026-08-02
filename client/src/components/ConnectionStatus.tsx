@@ -7,6 +7,7 @@ interface ConnectionStatusProps {
 
 const connectionStatusKeys = {
   connecting: "connection.connecting",
+  reconnecting: "connection.reconnecting",
   open: "connection.open",
   closed: "connection.closed",
   error: "connection.error",

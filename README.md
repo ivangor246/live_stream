@@ -13,6 +13,7 @@ The current release provides:
 - persistent stream metadata in PostgreSQL;
 - automatic database migrations in Docker;
 - REST and WebSocket APIs;
+- automatic dashboard WebSocket reconnect after temporary backend or network failures;
 - viewer counts and live reactions;
 - health and database readiness endpoints;
 - a backend and database status indicator in the dashboard;
@@ -612,6 +613,11 @@ Server messages are:
 Only viewers connected to a live stream can send reactions. A finished stream
 rejects new viewers and reactions.
 
+The dashboard reconnects a live-stream WebSocket after an unexpected close
+with exponential delays from one to fifteen seconds. It sends the same viewer
+identifier on reconnect, so viewer counting resumes after a backend restart.
+It does not retry a policy close caused by an expired or invalid session.
+
 ## Frontend preferences and visual system
 
 The frontend detects the first supported browser language from
@@ -639,5 +645,4 @@ page-specific styling.
 - backups are created on demand; scheduling, remote storage, and integrity verification are not available yet;
 - logs are not yet sent to an external aggregation service;
 - metrics are local to one backend process and reset after restart;
-- no automatic WebSocket reconnection;
 - no multi-instance backend coordination.

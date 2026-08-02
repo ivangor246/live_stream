@@ -26,6 +26,9 @@ export interface UseStreamSocketResult {
   sendReaction: (reaction: ReactionType) => void;
 }
 
+const reconnectInitialDelayMs = 1_000;
+const reconnectMaximumDelayMs = 15_000;
+
 function isRecord(
   value: unknown,
 ): value is Record<string, unknown> {
@@ -106,6 +109,9 @@ export function useStreamSocket(
   const { t } = useI18n();
   const viewerId = useMemo(() => crypto.randomUUID(), []);
   const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const shouldReconnectRef = useRef(initialStreamStatus === "live");
 
   const [connectionStatus, setConnectionStatus] =
     useState<SocketConnectionStatus>(
@@ -129,108 +135,163 @@ export function useStreamSocket(
     }
 
     let isActive = true;
-    const socket = new WebSocket(createWebSocketUrl());
+    shouldReconnectRef.current = true;
+    reconnectAttemptRef.current = 0;
 
-    socketRef.current = socket;
-
-    function handleOpen(): void {
-      if (!isActive) {
-        return;
+    function clearReconnectTimer(): void {
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
       }
-
-      setConnectionStatus("open");
-      setErrorCode(null);
-
-      const joinMessage: ClientWebSocketMessage = {
-        type: "viewer:join",
-        payload: {
-          streamId,
-          viewerId,
-        },
-      };
-
-      socket.send(JSON.stringify(joinMessage));
     }
 
-    function handleMessage(event: MessageEvent): void {
-      if (!isActive) {
+    function scheduleReconnect(): void {
+      if (!isActive || !shouldReconnectRef.current) {
         return;
       }
 
-      let parsedMessage: unknown;
+      const delay = Math.min(
+        reconnectInitialDelayMs * 2 ** reconnectAttemptRef.current,
+        reconnectMaximumDelayMs,
+      );
+      reconnectAttemptRef.current += 1;
+      setConnectionStatus("reconnecting");
+      reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
+        connect();
+      }, delay);
+    }
+
+    function connect(): void {
+      if (!isActive || !shouldReconnectRef.current) {
+        return;
+      }
+
+      setConnectionStatus(
+        reconnectAttemptRef.current === 0 ? "connecting" : "reconnecting",
+      );
+
+      let socket: WebSocket;
 
       try {
-        parsedMessage = JSON.parse(String(event.data));
+        socket = new WebSocket(createWebSocketUrl());
       } catch {
-        setErrorCode("INVALID_WEBSOCKET_JSON");
+        scheduleReconnect();
         return;
       }
 
-      if (!isServerWebSocketMessage(parsedMessage)) {
-        setErrorCode("INVALID_WEBSOCKET_MESSAGE");
-        return;
+      socketRef.current = socket;
+
+      function handleOpen(): void {
+        if (!isActive) {
+          return;
+        }
+
+        reconnectAttemptRef.current = 0;
+        setConnectionStatus("open");
+        setErrorCode(null);
+
+        const joinMessage: ClientWebSocketMessage = {
+          type: "viewer:join",
+          payload: {
+            streamId,
+            viewerId,
+          },
+        };
+
+        socket.send(JSON.stringify(joinMessage));
       }
 
-      switch (parsedMessage.type) {
-        case "stream:viewers-updated":
-          if (parsedMessage.payload.streamId === streamId) {
-            setViewerCount(parsedMessage.payload.viewerCount);
-          }
-          break;
+      function handleMessage(event: MessageEvent): void {
+        if (!isActive) {
+          return;
+        }
 
-        case "stream:reaction-received":
-          if (parsedMessage.payload.streamId === streamId) {
-            setReactionCount(
-              parsedMessage.payload.reactionCount,
-            );
-            setLastReaction(parsedMessage.payload.reaction);
-          }
-          break;
+        let parsedMessage: unknown;
 
-        case "stream:status-updated":
-          if (parsedMessage.payload.streamId === streamId) {
-            setStreamStatus(parsedMessage.payload.status);
-          }
-          break;
+        try {
+          parsedMessage = JSON.parse(String(event.data));
+        } catch {
+          setErrorCode("INVALID_WEBSOCKET_JSON");
+          return;
+        }
 
-        case "error":
-          setErrorCode(parsedMessage.payload.code);
-          break;
+        if (!isServerWebSocketMessage(parsedMessage)) {
+          setErrorCode("INVALID_WEBSOCKET_MESSAGE");
+          return;
+        }
+
+        switch (parsedMessage.type) {
+          case "stream:viewers-updated":
+            if (parsedMessage.payload.streamId === streamId) {
+              setViewerCount(parsedMessage.payload.viewerCount);
+            }
+            break;
+
+          case "stream:reaction-received":
+            if (parsedMessage.payload.streamId === streamId) {
+              setReactionCount(
+                parsedMessage.payload.reactionCount,
+              );
+              setLastReaction(parsedMessage.payload.reaction);
+            }
+            break;
+
+          case "stream:status-updated":
+            if (parsedMessage.payload.streamId === streamId) {
+              setStreamStatus(parsedMessage.payload.status);
+              if (parsedMessage.payload.status !== "live") {
+                shouldReconnectRef.current = false;
+                clearReconnectTimer();
+                socket.close();
+              }
+            }
+            break;
+
+          case "error":
+            setErrorCode(parsedMessage.payload.code);
+            break;
+        }
       }
+
+      function handleClose(event: CloseEvent): void {
+        if (!isActive) {
+          return;
+        }
+
+        if (socketRef.current === socket) {
+          socketRef.current = null;
+        }
+
+        if (event.code === 1008) {
+          shouldReconnectRef.current = false;
+          setConnectionStatus("closed");
+          setErrorCode("AUTH_UNAUTHORIZED");
+          return;
+        }
+
+        if (shouldReconnectRef.current) {
+          scheduleReconnect();
+          return;
+        }
+
+        setConnectionStatus("closed");
+      }
+
+      socket.addEventListener("open", handleOpen);
+      socket.addEventListener("message", handleMessage);
+      socket.addEventListener("close", handleClose);
     }
 
-    function handleError(): void {
-      if (!isActive) {
-        return;
-      }
-
-      setConnectionStatus("error");
-      setErrorCode("INTERNAL_SERVER_ERROR");
-    }
-
-    function handleClose(): void {
-      if (!isActive) {
-        return;
-      }
-
-      socketRef.current = null;
-      setConnectionStatus("closed");
-    }
-
-    socket.addEventListener("open", handleOpen);
-    socket.addEventListener("message", handleMessage);
-    socket.addEventListener("error", handleError);
-    socket.addEventListener("close", handleClose);
+    connect();
 
     return () => {
       isActive = false;
+      shouldReconnectRef.current = false;
+      clearReconnectTimer();
+      const socket = socketRef.current;
       socketRef.current = null;
-
-      socket.removeEventListener("open", handleOpen);
-      socket.removeEventListener("message", handleMessage);
-      socket.removeEventListener("error", handleError);
-      socket.removeEventListener("close", handleClose);
-      socket.close();
+      socket?.close();
     };
   }, [initialStreamStatus, streamId, viewerId]);
 

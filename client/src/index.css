@@ -1099,7 +1099,8 @@ dd {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 16%, transparent);
 }
 
-.connection-status--connecting::before {
+.connection-status--connecting::before,
+.connection-status--reconnecting::before {
   background: var(--color-warning);
 }
 
