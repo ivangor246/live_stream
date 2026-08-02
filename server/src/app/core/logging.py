@@ -55,11 +55,16 @@ def configure_logging(log_level: str) -> None:
 
     logging.basicConfig(level=level, handlers=[handler], force=True)
 
-    for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+    for logger_name in ("uvicorn", "uvicorn.error"):
         logger = logging.getLogger(logger_name)
         logger.handlers.clear()
         logger.setLevel(level)
         logger.propagate = True
+
+    access_logger = logging.getLogger("uvicorn.access")
+    access_logger.handlers.clear()
+    access_logger.disabled = True
+    access_logger.propagate = False
 
 
 def create_request_id(value: str | None) -> str:
