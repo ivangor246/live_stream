@@ -1,5 +1,7 @@
 # Live Stream Monitor
 
+[![Continuous integration](https://github.com/ivangor246/live_stream/actions/workflows/ci.yml/badge.svg)](https://github.com/ivangor246/live_stream/actions/workflows/ci.yml)
+
 Live Stream Monitor is a self-hosted control panel for managing live-stream
 events. It is designed for personal servers, small teams, and private
 communities that need a simple dashboard without depending on a hosted video
@@ -396,6 +398,14 @@ address. For Docker Compose, set the corresponding variables in a root `.env`
 file and use the Docker service hostname when a dependency runs inside Compose.
 The `MEDIA_AUTH_URL` override in the `make media-up` example connects the
 containerized MediaMTX service to a backend running directly on the host.
+
+## Continuous integration
+
+GitHub Actions runs frontend linting and production builds, backend Poetry,
+Ruff, compilation and import checks, plus a Docker Compose smoke test on pull
+requests and pushes to `main`. The smoke test waits for PostgreSQL migrations
+and verifies the backend readiness endpoint through both the backend and the
+frontend proxy.
 
 ## Makefile commands
 
