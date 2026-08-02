@@ -213,6 +213,14 @@ export function updateUser(
   );
 }
 
+export function deleteUser(userId: string): Promise<null> {
+  return request<null>(
+    `/api/auth/users/${encodeURIComponent(userId)}`,
+    (value: unknown): value is null => value === null,
+    { method: "DELETE" },
+  );
+}
+
 export function getInvitations(
   signal?: AbortSignal,
 ): Promise<AccountInvitation[]> {

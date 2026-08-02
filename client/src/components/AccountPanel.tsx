@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getUsers, updateUser } from "../api/authApi.js";
+import { deleteUser, getUsers, updateUser } from "../api/authApi.js";
 import { localizeError } from "../i18n/errorMessages.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 import type { ManagedUser, UserRole } from "../shared/auth.js";
@@ -106,6 +106,24 @@ export function AccountPanel({ currentUserId }: AccountPanelProps) {
     }
   }
 
+  async function handleDelete(user: ManagedUser): Promise<void> {
+    if (user.isActive || !window.confirm(t("accounts.confirmDelete", { username: user.username }))) {
+      return;
+    }
+
+    setUpdatingUserId(user.id);
+    setError(null);
+
+    try {
+      await deleteUser(user.id);
+      setUsers((currentUsers) => currentUsers.filter((currentUser) => currentUser.id !== user.id));
+    } catch (requestError: unknown) {
+      setError(localizeError(requestError, t, "errors.deleteAccount"));
+    } finally {
+      setUpdatingUserId((currentId) => currentId === user.id ? null : currentId);
+    }
+  }
+
   return (
     <Card as="section" className="account-panel">
       <header>
@@ -172,6 +190,16 @@ export function AccountPanel({ currentUserId }: AccountPanelProps) {
                           ? isUpdating ? t("accounts.disabling") : t("accounts.disable")
                           : isUpdating ? t("accounts.enabling") : t("accounts.enable")}
                       </Button>
+                      {!user.isActive && (
+                        <Button
+                          disabled={isUpdating}
+                          size="sm"
+                          variant="danger"
+                          onClick={() => void handleDelete(user)}
+                        >
+                          {isUpdating ? t("accounts.deleting") : t("accounts.delete")}
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>

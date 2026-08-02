@@ -26,6 +26,7 @@ The current release provides:
 - one-time account invitation links for operators and viewers;
 - administrator account list with reversible account deactivation;
 - administrator role changes for existing accounts;
+- safe removal of disabled accounts;
 - private stream events with revocable viewer access links;
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - automatic fMP4 recordings with a protected stream archive;
@@ -292,7 +293,10 @@ disable their own account, which prevents accidental loss of all administrative
 access. Administrators can also change another account between administrator,
 operator, and viewer roles; the new permissions apply to existing sessions on
 their next request. An administrator cannot reduce their own role. Deleting
-accounts remains a deliberately separate future operation.
+an account requires disabling it first and a separate confirmation in the
+dashboard. The backend rejects attempts to delete active accounts or the
+current administrator, and PostgreSQL removes the deleted account's sessions
+through the foreign-key relationship. Streams and recordings are not deleted.
 
 When creating a stream, an administrator or operator can mark it as private.
 For a private stream, the stream page provides shareable viewer access links.
@@ -477,6 +481,7 @@ Run `make help` for the full list:
 | `POST` | `/api/auth/logout` | End the current session |
 | `GET` | `/api/auth/users` | List dashboard accounts (administrator only) |
 | `PATCH` | `/api/auth/users/{userId}` | Enable/disable an account or change its role (administrator only) |
+| `DELETE` | `/api/auth/users/{userId}` | Permanently delete a disabled account (administrator only) |
 | `GET` | `/api/auth/invitations` | List active account invitations (administrator only) |
 | `POST` | `/api/auth/invitations` | Create an operator/viewer invitation (administrator only) |
 | `DELETE` | `/api/auth/invitations/{invitationId}` | Revoke an unused invitation (administrator only) |
