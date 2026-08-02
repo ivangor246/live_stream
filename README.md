@@ -24,6 +24,7 @@ The current release provides:
 - first-run local administrator setup with cookie-based sessions;
 - administrator, operator, and viewer roles with protected stream management;
 - one-time account invitation links for operators and viewers;
+- administrator account list with reversible account deactivation;
 - private stream events with revocable viewer access links;
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - automatic fMP4 recordings with a protected stream archive;
@@ -283,6 +284,13 @@ the dashboard. The backend stores only a SHA-256 hash of each link token. Links
 expire after seven days by default, can be revoked while unused, and are shown
 in full only immediately after creation.
 
+The dashboard also lists configured accounts for administrators. An
+administrator can disable another account to revoke its active sessions and
+block future sign-ins, then enable it again later. An administrator cannot
+disable their own account, which prevents accidental loss of all administrative
+access. Changing roles and deleting accounts are deliberately separate future
+operations.
+
 When creating a stream, an administrator or operator can mark it as private.
 For a private stream, the stream page provides shareable viewer access links.
 The recipient can open a link and watch the stream without a dashboard account.
@@ -464,6 +472,8 @@ Run `make help` for the full list:
 | `POST` | `/api/auth/setup` | Create the first administrator account |
 | `POST` | `/api/auth/login` | Start an authenticated session |
 | `POST` | `/api/auth/logout` | End the current session |
+| `GET` | `/api/auth/users` | List dashboard accounts (administrator only) |
+| `PATCH` | `/api/auth/users/{userId}` | Enable or disable an account (administrator only) |
 | `GET` | `/api/auth/invitations` | List active account invitations (administrator only) |
 | `POST` | `/api/auth/invitations` | Create an operator/viewer invitation (administrator only) |
 | `DELETE` | `/api/auth/invitations/{invitationId}` | Revoke an unused invitation (administrator only) |

@@ -18,6 +18,10 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+export interface ManagedUser extends AuthUser {
+  isActive: boolean;
+}
+
 export interface AuthCredentials {
   username: string;
   password: string;

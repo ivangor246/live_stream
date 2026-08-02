@@ -21,6 +21,7 @@ import { Button } from "../components/ui/Button.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { canManageStreams } from "../shared/auth.js";
 import { InvitationPanel } from "../components/InvitationPanel.js";
+import { AccountPanel } from "../components/AccountPanel.js";
 
 type StreamStatusAction = (streamId: string) => Promise<Stream>;
 
@@ -151,6 +152,7 @@ export function StreamsPage() {
 
       {canManage && <CreateStreamForm onCreate={handleCreate} />}
       {user?.role === "admin" && <InvitationPanel />}
+      {user?.role === "admin" && <AccountPanel currentUserId={user.id} />}
 
       <section className="streams-section">
         <header className="streams-section__header">

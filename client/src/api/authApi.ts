@@ -7,8 +7,10 @@ import type {
   AuthCredentials,
   AuthResponse,
   AuthStatus,
+  AuthUser,
   CreatedAccountInvitation,
   InviteRole,
+  ManagedUser,
   UserRole,
 } from "../shared/auth.js";
 
@@ -26,7 +28,7 @@ function isInviteRole(value: unknown): value is InviteRole {
   return value === "operator" || value === "viewer";
 }
 
-function isAuthUser(value: unknown): boolean {
+function isAuthUser(value: unknown): value is AuthUser {
   if (!isRecord(value)) {
     return false;
   }
@@ -37,6 +39,18 @@ function isAuthUser(value: unknown): boolean {
     isUserRole(value.role) &&
     typeof value.createdAt === "string"
   );
+}
+
+function isManagedUser(value: unknown): value is ManagedUser {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return isAuthUser(value) && typeof value.isActive === "boolean";
+}
+
+function isManagedUsers(value: unknown): value is ManagedUser[] {
+  return Array.isArray(value) && value.every(isManagedUser);
 }
 
 function isAuthStatus(value: unknown): value is AuthStatus {
@@ -171,6 +185,31 @@ export function logout(): Promise<null> {
     "/api/auth/logout",
     (value: unknown): value is null => value === null,
     { method: "POST" },
+  );
+}
+
+export function getUsers(signal?: AbortSignal): Promise<ManagedUser[]> {
+  return request<ManagedUser[]>(
+    "/api/auth/users",
+    isManagedUsers,
+    signal ? { signal } : undefined,
+  );
+}
+
+export function updateUserActive(
+  userId: string,
+  isActive: boolean,
+): Promise<ManagedUser> {
+  return request<ManagedUser>(
+    `/api/auth/users/${encodeURIComponent(userId)}`,
+    isManagedUser,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ isActive }),
+    },
   );
 }
 

@@ -2,7 +2,7 @@ import type { StreamStatus } from "../../shared/stream.js";
 
 interface StatusBadgeProps {
   label: string;
-  status: StreamStatus | "online" | "offline" | "unavailable";
+  status: StreamStatus | "online" | "offline" | "unavailable" | "active" | "disabled";
 }
 
 export function StatusBadge({ label, status }: StatusBadgeProps) {
