@@ -17,13 +17,14 @@ The current release provides:
 - stream status filters and sorting;
 - a first-run empty state and confirmation for finishing streams;
 - a MediaMTX service with RTMP publishing and HLS/WebRTC connection details;
-- managed MediaMTX paths created at stream start and removed at stream finish;
+- managed MediaMTX paths created at stream start and retained for archive playback;
 - an embedded WebRTC player with automatic HLS fallback;
 - first-run local administrator setup with cookie-based sessions;
 - administrator, operator, and viewer roles with protected stream management;
 - one-time account invitation links for operators and viewers;
 - private stream events with revocable viewer access links;
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
+- automatic fMP4 recordings with a protected stream archive;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
@@ -33,7 +34,8 @@ The dashboard prepares MediaMTX connection details and an embedded player for
 each live stream. It also polls the MediaMTX Control API and displays the
 current source status. Local accounts have role-based access to the dashboard.
 MediaMTX asks the backend to validate every publish and read request for a live
-path. The player prefers WebRTC and falls back to HLS.
+path. The player prefers WebRTC and falls back to HLS. After a stream has
+finished, its recorded segments are available through the protected archive.
 
 ## Technology
 
@@ -133,6 +135,8 @@ make docker-down
 
 The `postgres-data` Docker volume is kept by default. Set a strong
 `POSTGRES_PASSWORD` before exposing the installation beyond a local network.
+Recordings are stored separately in the `media-recordings` Docker volume and
+are retained for 30 days by default.
 
 On the first visit, the dashboard asks you to create a local administrator
 account. Use a password with at least 12 characters. Later visits show the
@@ -170,6 +174,17 @@ MediaMTX receives short-lived per-stream credentials from the backend. The
 `MEDIA_AUTH_SECRET` value signs them and `MEDIA_AUTH_TOKEN_TTL_SECONDS` controls
 their lifetime. Set a strong `MEDIA_AUTH_SECRET` in the root `.env` before
 exposing the installation beyond a local network.
+
+The archive is served by the backend, which checks the dashboard session or a
+private viewer link before it proxies a recording from MediaMTX. Configure the
+global retention period with `MEDIA_RECORD_RETENTION`; for example:
+
+```dotenv
+MEDIA_RECORD_RETENTION=30d
+```
+
+MediaMTX removes expired recording segments automatically. Set a duration that
+matches the storage capacity and retention requirements of the installation.
 
 For an HTTPS deployment, enable secure cookies in the root `.env` file:
 
@@ -277,9 +292,13 @@ Run `make help` for the full list:
 | `GET` | `/api/auth/invitations/{token}` | Check an invitation before accepting it |
 | `POST` | `/api/auth/invitations/{token}/accept` | Create an account from an invitation |
 | `GET` | `/api/viewer-invitations/{token}` | Get private-stream playback from a viewer link |
+| `GET` | `/api/viewer-invitations/{token}/recordings` | List recordings available through a private viewer link |
+| `GET` | `/api/viewer-invitations/{token}/recordings/playback` | Play one recording through a private viewer link |
 | `GET` | `/api/streams` | Get all streams (any authenticated role) |
 | `GET` | `/api/streams/{streamId}` | Get one stream (any authenticated role) |
 | `GET` | `/api/streams/{streamId}/playback` | Get safe HLS/WebRTC playback details (any authenticated role) |
+| `GET` | `/api/streams/{streamId}/recordings` | List protected recording segments (any authenticated role) |
+| `GET` | `/api/streams/{streamId}/recordings/playback` | Play one protected recording segment (any authenticated role) |
 | `GET` | `/api/streams/{streamId}/connection` | Get RTMP connection details (administrator or operator) |
 | `GET` | `/api/streams/{streamId}/viewer-invitations` | List active viewer links (administrator or operator) |
 | `POST` | `/api/streams/{streamId}/viewer-invitations` | Create a viewer link for a private stream (administrator or operator) |
@@ -327,12 +346,16 @@ The API returns stream fields in the frontend contract format:
    HLS and WebRTC links available in the same panel.
 5. When the stream is live, the panel refreshes the source status every five
    seconds and shows the detected source protocol.
+6. Finish the stream in the dashboard. MediaMTX stops recording and the stream
+   page exposes its archive. Private viewer links can open the same archive.
 
 The HLS and WebRTC links contain short-lived viewer credentials for copying or
 sharing. The embedded player removes them before making browser requests and
 sends the credentials in the `Authorization` header.
 
-The MediaMTX credential flow follows the [MediaMTX authentication guide](https://mediamtx.org/docs/features/authentication).
+The MediaMTX credential flow follows the [MediaMTX authentication guide](https://mediamtx.org/docs/features/authentication). Recording and archive playback
+follow the [MediaMTX recording guide](https://mediamtx.org/docs/features/record)
+and [playback guide](https://mediamtx.org/docs/features/playback).
 
 For protocol-specific setup, see the [MediaMTX OBS guide](https://mediamtx.org/docs/publish/obs-studio),
 [HLS guide](https://mediamtx.org/docs/read/hls), and
@@ -402,7 +425,7 @@ page-specific styling.
 - no source-state history, alerts, or automatic stream lifecycle changes;
 - account invitation links are not delivered by email or another notification service;
 - viewer links are bearer credentials and cannot yet be assigned to named attendees;
-- media paths are removed only when the operator finishes a stream;
+- recording retention is global; there is no per-stream deletion or retention policy yet;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
 - no automated PostgreSQL backup or retention policy;
