@@ -23,13 +23,13 @@ mkdir -p "$backup_directory"
 docker compose exec -T postgres sh -c \
   'pg_dump --format=custom --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
   > "$backup_directory/postgres.dump"
-docker compose exec -T mediamtx tar -C /recordings -czf - . \
-  > "$backup_directory/recordings.tar.gz"
+mkdir -p "$backup_directory/recordings"
+docker compose cp mediamtx:/recordings/. "$backup_directory/recordings"
 
 printf '%s\n' \
   "created_at=$timestamp" \
   'database_dump=postgres.dump' \
-  'recordings_archive=recordings.tar.gz' \
+  'recordings_directory=recordings' \
   > "$backup_directory/manifest.txt"
 
 printf 'Backup created: %s\n' "$backup_directory"
