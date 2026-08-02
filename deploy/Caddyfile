@@ -1,0 +1,24 @@
+{
+	email {$CADDY_EMAIL}
+}
+
+{$LIVE_STREAM_DOMAIN} {
+	encode zstd gzip
+
+	# MediaMTX expects requests without the public path prefix.
+	handle_path /hls/* {
+		reverse_proxy mediamtx:8888 {
+			header_down Location ^/ /hls/
+		}
+	}
+
+	handle_path /webrtc/* {
+		reverse_proxy mediamtx:8889 {
+			header_down Location ^/ /webrtc/
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}

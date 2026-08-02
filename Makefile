@@ -1,10 +1,11 @@
 SHELL := /bin/sh
 
 POETRY ?= poetry
+HTTPS_COMPOSE = docker compose --env-file deploy/.env.https -f docker-compose.yml -f docker-compose.https.yml
 
 .PHONY: help install install-frontend install-backend db-up db-down db-migrate media-up media-down backup \
         dev-frontend dev-backend lint build backend-check docker-build docker-up \
-        docker-down docker-logs
+        docker-down docker-logs https-up https-down
 
 help:
 	@printf '%s\n' \
@@ -23,7 +24,9 @@ help:
 		'make docker-build     Build both Docker images' \
 		'make docker-up        Build and start frontend and backend' \
 		'make docker-down      Stop Docker services' \
-		'make docker-logs      Follow Docker service logs'
+		'make docker-logs      Follow Docker service logs' \
+		'make https-up         Start the HTTPS deployment from deploy/.env.https' \
+		'make https-down       Stop the HTTPS deployment'
 
 install: install-frontend install-backend
 
@@ -79,3 +82,9 @@ docker-down:
 
 docker-logs:
 	docker compose logs -f
+
+https-up:
+	$(HTTPS_COMPOSE) up --build -d
+
+https-down:
+	$(HTTPS_COMPOSE) down

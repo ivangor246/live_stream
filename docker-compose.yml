@@ -11,9 +11,9 @@ services:
       - ./server/mediamtx.yml:/mediamtx.yml:ro
       - media-recordings:/recordings
     ports:
-      - "${MEDIA_RTMP_PORT:-1935}:1935"
-      - "${MEDIA_HLS_PORT:-8888}:8888"
-      - "${MEDIA_WEBRTC_PORT:-8889}:8889"
+      - "${MEDIA_RTMP_BIND_ADDRESS:-0.0.0.0}:${MEDIA_RTMP_PORT:-1935}:1935"
+      - "${MEDIA_HLS_BIND_ADDRESS:-0.0.0.0}:${MEDIA_HLS_PORT:-8888}:8888"
+      - "${MEDIA_WEBRTC_BIND_ADDRESS:-0.0.0.0}:${MEDIA_WEBRTC_PORT:-8889}:8889"
       - "127.0.0.1:${MEDIA_API_PORT:-9997}:9997"
 
   postgres:
@@ -28,7 +28,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_BIND_ADDRESS:-0.0.0.0}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -58,7 +58,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "${BACKEND_PORT:-3000}:3000"
+      - "${BACKEND_BIND_ADDRESS:-0.0.0.0}:${BACKEND_PORT:-3000}:3000"
 
   frontend:
     build:
@@ -66,7 +66,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      - "${FRONTEND_BIND_ADDRESS:-0.0.0.0}:${FRONTEND_PORT:-8080}:80"
 
 volumes:
   postgres-data:

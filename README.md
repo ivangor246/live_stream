@@ -101,6 +101,9 @@ server/
 client/Dockerfile     frontend build and Nginx image
 server/Dockerfile     Python 3.13 backend image
 docker-compose.yml    frontend, backend, PostgreSQL, and MediaMTX services
+docker-compose.https.yml
+                      optional Caddy HTTPS reverse-proxy overlay
+deploy/               Caddy configuration and HTTPS environment template
 Makefile              common local and Docker commands
 scripts/backup.sh     local backup helper for PostgreSQL and recordings
 ```
@@ -142,6 +145,52 @@ The `postgres-data` Docker volume is kept by default. Set a strong
 `POSTGRES_PASSWORD` before exposing the installation beyond a local network.
 Recordings are stored separately in the `media-recordings` Docker volume and
 are retained for 30 days by default.
+
+## HTTPS deployment
+
+For a public server, use the optional Caddy overlay. It keeps the normal
+`docker-compose.yml` workflow for local development while providing one HTTPS
+origin for the dashboard, API, WebSocket, HLS, and WebRTC signalling. Caddy
+obtains and renews TLS certificates automatically for a public DNS name. See
+the [Caddy automatic HTTPS documentation](https://caddyserver.com/docs/automatic-https)
+for its certificate requirements.
+
+Before starting the deployment:
+
+1. Point the DNS `A`/`AAAA` record for the chosen domain to the server.
+2. Allow inbound TCP ports `80`, `443`, and `1935`, plus UDP ports `443` and
+   `8189` in the server firewall and provider firewall.
+3. Copy the template and replace its example domain, email address, database
+   password, and media auth secret:
+
+   ```bash
+   cp deploy/.env.https.example deploy/.env.https
+   ```
+
+4. Start the HTTPS stack:
+
+   ```bash
+   make https-up
+   ```
+
+Open `https://<LIVE_STREAM_DOMAIN>` after Caddy reports that the certificate
+was obtained. Stop this variant with `make https-down`.
+
+The template binds PostgreSQL, FastAPI, the frontend container, HLS, and the
+WebRTC signalling server to `127.0.0.1`. Caddy is therefore the only public
+HTTP entry point. RTMP publishing remains directly available on TCP `1935`, and
+WebRTC media uses UDP `8189`; MediaMTX advertises the configured domain to
+WebRTC clients. The Caddy proxy strips the `/hls` and `/webrtc` prefixes before
+forwarding requests, as required when [MediaMTX is exposed in a
+subfolder](https://mediamtx.org/docs/features/expose-the-server-in-a-subfolder).
+Its WebSocket proxying is handled by Caddy's standard
+[reverse-proxy support](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy).
+
+Do not run `make docker-up` and `make https-up` on the same host at the same
+time: both configurations use the same application services and media ports.
+In this deployment, scrape metrics locally from
+`http://127.0.0.1:3000/metrics` or through a trusted monitoring network rather
+than adding a public metrics route.
 
 ## Backup
 
@@ -334,6 +383,8 @@ Run `make help` for the full list:
 | `make docker-up` | Build and start all Docker services |
 | `make docker-down` | Stop and remove the Docker containers |
 | `make docker-logs` | Follow Docker service logs |
+| `make https-up` | Build and start the Caddy HTTPS deployment from `deploy/.env.https` |
+| `make https-down` | Stop the Caddy HTTPS deployment |
 
 ## REST API
 
