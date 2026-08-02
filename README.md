@@ -25,6 +25,7 @@ The current release provides:
 - administrator, operator, and viewer roles with protected stream management;
 - one-time account invitation links for operators and viewers;
 - administrator account list with reversible account deactivation;
+- administrator role changes for existing accounts;
 - private stream events with revocable viewer access links;
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - automatic fMP4 recordings with a protected stream archive;
@@ -288,8 +289,10 @@ The dashboard also lists configured accounts for administrators. An
 administrator can disable another account to revoke its active sessions and
 block future sign-ins, then enable it again later. An administrator cannot
 disable their own account, which prevents accidental loss of all administrative
-access. Changing roles and deleting accounts are deliberately separate future
-operations.
+access. Administrators can also change another account between administrator,
+operator, and viewer roles; the new permissions apply to existing sessions on
+their next request. An administrator cannot reduce their own role. Deleting
+accounts remains a deliberately separate future operation.
 
 When creating a stream, an administrator or operator can mark it as private.
 For a private stream, the stream page provides shareable viewer access links.
@@ -473,7 +476,7 @@ Run `make help` for the full list:
 | `POST` | `/api/auth/login` | Start an authenticated session |
 | `POST` | `/api/auth/logout` | End the current session |
 | `GET` | `/api/auth/users` | List dashboard accounts (administrator only) |
-| `PATCH` | `/api/auth/users/{userId}` | Enable or disable an account (administrator only) |
+| `PATCH` | `/api/auth/users/{userId}` | Enable/disable an account or change its role (administrator only) |
 | `GET` | `/api/auth/invitations` | List active account invitations (administrator only) |
 | `POST` | `/api/auth/invitations` | Create an operator/viewer invitation (administrator only) |
 | `DELETE` | `/api/auth/invitations/{invitationId}` | Revoke an unused invitation (administrator only) |

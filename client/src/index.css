@@ -553,6 +553,23 @@ h2 {
   gap: 0.5rem;
 }
 
+.account-panel__role {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--color-text-soft);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.account-panel__role select {
+  min-height: 2.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.3rem 0.5rem;
+  color: var(--color-text);
+  background: var(--color-surface-elevated);
+}
+
 input {
   width: 100%;
   min-height: 2.75rem;

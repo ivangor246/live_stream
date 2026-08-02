@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getUsers, updateUserActive } from "../api/authApi.js";
+import { getUsers, updateUser } from "../api/authApi.js";
 import { localizeError } from "../i18n/errorMessages.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 import type { ManagedUser, UserRole } from "../shared/auth.js";
@@ -65,7 +65,37 @@ export function AccountPanel({ currentUserId }: AccountPanelProps) {
     setError(null);
 
     try {
-      const updatedUser = await updateUserActive(user.id, nextIsActive);
+      const updatedUser = await updateUser(user.id, { isActive: nextIsActive });
+      setUsers((currentUsers) => currentUsers.map((currentUser) => (
+        currentUser.id === updatedUser.id ? updatedUser : currentUser
+      )));
+    } catch (requestError: unknown) {
+      setError(localizeError(requestError, t, "errors.updateAccount"));
+    } finally {
+      setUpdatingUserId((currentId) => currentId === user.id ? null : currentId);
+    }
+  }
+
+  async function handleRoleChange(
+    user: ManagedUser,
+    nextRole: UserRole,
+  ): Promise<void> {
+    if (nextRole === user.role) {
+      return;
+    }
+
+    if (!window.confirm(t("accounts.confirmRole", {
+      username: user.username,
+      role: t(roleKeys[nextRole]),
+    }))) {
+      return;
+    }
+
+    setUpdatingUserId(user.id);
+    setError(null);
+
+    try {
+      const updatedUser = await updateUser(user.id, { role: nextRole });
       setUsers((currentUsers) => currentUsers.map((currentUser) => (
         currentUser.id === updatedUser.id ? updatedUser : currentUser
       )));
@@ -110,16 +140,39 @@ export function AccountPanel({ currentUserId }: AccountPanelProps) {
                     status={user.isActive ? "active" : "disabled"}
                   />
                   {!isCurrentUser && (
-                    <Button
-                      disabled={isUpdating}
-                      size="sm"
-                      variant={user.isActive ? "danger" : "secondary"}
-                      onClick={() => void handleActiveChange(user)}
-                    >
-                      {user.isActive
-                        ? isUpdating ? t("accounts.disabling") : t("accounts.disable")
-                        : isUpdating ? t("accounts.enabling") : t("accounts.enable")}
-                    </Button>
+                    <>
+                      <label className="account-panel__role">
+                        <span>{t("accounts.roleLabel")}</span>
+                        <select
+                          value={user.role}
+                          disabled={isUpdating}
+                          onChange={(event) => {
+                            const nextRole = event.target.value;
+                            if (
+                              nextRole === "admin" ||
+                              nextRole === "operator" ||
+                              nextRole === "viewer"
+                            ) {
+                              void handleRoleChange(user, nextRole);
+                            }
+                          }}
+                        >
+                          {Object.entries(roleKeys).map(([role, roleKey]) => (
+                            <option key={role} value={role}>{t(roleKey)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <Button
+                        disabled={isUpdating}
+                        size="sm"
+                        variant={user.isActive ? "danger" : "secondary"}
+                        onClick={() => void handleActiveChange(user)}
+                      >
+                        {user.isActive
+                          ? isUpdating ? t("accounts.disabling") : t("accounts.disable")
+                          : isUpdating ? t("accounts.enabling") : t("accounts.enable")}
+                      </Button>
+                    </>
                   )}
                 </div>
               </li>

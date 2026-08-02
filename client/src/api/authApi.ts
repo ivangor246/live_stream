@@ -196,9 +196,9 @@ export function getUsers(signal?: AbortSignal): Promise<ManagedUser[]> {
   );
 }
 
-export function updateUserActive(
+export function updateUser(
   userId: string,
-  isActive: boolean,
+  update: { isActive?: boolean; role?: UserRole },
 ): Promise<ManagedUser> {
   return request<ManagedUser>(
     `/api/auth/users/${encodeURIComponent(userId)}`,
@@ -208,7 +208,7 @@ export function updateUserActive(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ isActive }),
+      body: JSON.stringify(update),
     },
   );
 }
