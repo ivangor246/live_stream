@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import Response
 
 from app.api.routes import create_api_router
 from app.api.media import create_media_router
@@ -10,6 +11,7 @@ from app.api.websocket import register_websocket_route
 from app.core.config import settings
 from app.core.handlers import register_exception_handlers
 from app.core.logging import configure_logging, log_http_request
+from app.core.metrics import http_metrics
 from app.database.session import close_database, create_database
 from app.repositories.postgres import PostgresStreamsRepository
 from app.repositories.auth import PostgresAuthRepository
@@ -105,6 +107,13 @@ def create_app() -> FastAPI:
     )
 
     application.middleware("http")(log_http_request)
+
+    @application.get("/metrics", include_in_schema=False)
+    async def metrics() -> Response:
+        return Response(
+            content=http_metrics.render(),
+            headers={"Content-Type": "text/plain; version=0.0.4; charset=utf-8"},
+        )
 
     register_exception_handlers(application)
     application.include_router(

@@ -131,6 +131,18 @@ class MediaStatusService:
             sourceProtocol=source_protocol,
         )
 
+    async def is_available(self) -> bool:
+        request_url = f"{self._api_url}/v3/paths/list"
+
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                response = await client.get(request_url)
+        except httpx.HTTPError:
+            logger.debug("MediaMTX health request failed")
+            return False
+
+        return not response.is_error
+
 
 class MediaConnectionService:
     def __init__(

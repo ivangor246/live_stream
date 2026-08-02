@@ -8,6 +8,8 @@ from uuid import UUID, uuid4
 from fastapi import Request, Response
 from starlette.middleware.base import RequestResponseEndpoint
 
+from app.core.metrics import http_metrics
+
 request_id_context: ContextVar[str | None] = ContextVar(
     "request_id",
     default=None,
@@ -93,14 +95,25 @@ async def log_http_request(
         return response
     finally:
         route = request.scope.get("route")
+        route_path = getattr(route, "path", "unmatched")
+        duration_seconds = time.perf_counter() - started_at
+
+        if route_path != "/metrics":
+            http_metrics.record(
+                request.method,
+                route_path,
+                status_code,
+                duration_seconds,
+            )
+
         logging.getLogger("app.http").info(
             "HTTP request completed",
             extra={
                 "event": "http_request_completed",
                 "http_method": request.method,
-                "http_route": getattr(route, "path", "unmatched"),
+                "http_route": route_path,
                 "http_status": status_code,
-                "duration_ms": round((time.perf_counter() - started_at) * 1000, 2),
+                "duration_ms": round(duration_seconds * 1000, 2),
             },
         )
         request_id_context.reset(context_token)

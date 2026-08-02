@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -8,7 +9,12 @@ from starlette.responses import Response, StreamingResponse
 
 from app.core.errors import AppError
 from app.database.session import check_database_connection
-from app.schemas.api import HealthResponse, ReadinessResponse
+from app.schemas.api import (
+    HealthResponse,
+    ReadinessResponse,
+    ServiceStatus,
+    SystemStatusResponse,
+)
 from app.schemas.export import StreamExportFormat
 from app.schemas.invitation import (
     CreatedStreamViewerInvitation,
@@ -58,6 +64,26 @@ def create_api_router(
             ) from error
 
         return ReadinessResponse(status="ok", database="ok")
+
+    @router.get("/status", response_model=SystemStatusResponse)
+    async def system_status() -> SystemStatusResponse:
+        try:
+            await check_database_connection(database_engine)
+        except (SQLAlchemyError, OSError):
+            database_status = "unavailable"
+        else:
+            database_status = "ok"
+
+        media_status = "ok" if await media_status_service.is_available() else "unavailable"
+        is_ready = database_status == "ok" and media_status == "ok"
+
+        return SystemStatusResponse(
+            status="ready" if is_ready else "degraded",
+            backend=ServiceStatus(status="ok"),
+            database=ServiceStatus(status=database_status),
+            media=ServiceStatus(status=media_status),
+            checkedAt=datetime.now(timezone.utc),
+        )
 
     _register_stream_export_route(
         router,
