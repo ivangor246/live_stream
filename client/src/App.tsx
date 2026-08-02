@@ -5,6 +5,7 @@ import { AppShell } from "./components/layout/AppShell.js";
 import { useI18n } from "./i18n/I18nProvider.js";
 import { AuthPage, AuthUnavailablePage } from "./pages/AuthPage.js";
 import { InvitePage } from "./pages/InvitePage.js";
+import { StatusPage } from "./pages/StatusPage.js";
 import { StreamPage } from "./pages/StreamPage.js";
 import { StreamsPage } from "./pages/StreamsPage.js";
 import { ViewerStreamPage } from "./pages/ViewerStreamPage.js";
@@ -53,6 +54,7 @@ export default function App() {
       <Routes>
         <Route path="/invite/:token" element={<InvitePage />} />
         <Route path="/watch/:token" element={<ViewerStreamPage />} />
+        <Route path="/status" element={<StatusPage />} />
         <Route path="*" element={<AuthRouteContent />} />
       </Routes>
     </AppShell>

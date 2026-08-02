@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../../auth/AuthProvider.js";
-import { getReadiness } from "../../api/streamsApi.js";
+import { getSystemStatus } from "../../api/streamsApi.js";
 import { Button } from "../ui/Button.js";
 import { useI18n } from "../../i18n/I18nProvider.js";
 import { LanguageSwitcher } from "./LanguageSwitcher.js";
@@ -24,10 +24,12 @@ export function AppShell({ children }: AppShellProps) {
 
     async function checkSystemStatus(): Promise<void> {
       try {
-        await getReadiness(abortController.signal);
+        const nextStatus = await getSystemStatus(abortController.signal);
 
         if (!abortController.signal.aborted) {
-          setSystemStatus("ready");
+          setSystemStatus(
+            nextStatus.status === "ready" ? "ready" : "unavailable",
+          );
         }
       } catch {
         if (!abortController.signal.aborted) {
@@ -59,7 +61,9 @@ export function AppShell({ children }: AppShellProps) {
           </Link>
 
           <div className="app-header__controls">
-            <SystemStatus status={systemStatus} />
+            <Link className="system-status-link" to="/status">
+              <SystemStatus status={systemStatus} />
+            </Link>
             {user && (
               <>
                 <span className="auth-account">

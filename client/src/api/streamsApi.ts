@@ -14,6 +14,7 @@ import type {
   StreamPlayback,
   StreamExportDownload,
   StreamExportFormat,
+  SystemStatusResponse,
   ViewerInvitationPlayback,
 } from "../shared/api.js";
 
@@ -133,6 +134,29 @@ function isReadinessResponse(value: unknown): value is ReadinessResponse {
   }
 
   return value.status === "ok" && value.database === "ok";
+}
+
+function isServiceHealth(value: unknown): value is "ok" | "unavailable" {
+  return value === "ok" || value === "unavailable";
+}
+
+function isSystemStatusResponse(value: unknown): value is SystemStatusResponse {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.backend) ||
+    !isRecord(value.database) ||
+    !isRecord(value.media)
+  ) {
+    return false;
+  }
+
+  return (
+    (value.status === "ready" || value.status === "degraded") &&
+    isServiceHealth(value.backend.status) &&
+    isServiceHealth(value.database.status) &&
+    isServiceHealth(value.media.status) &&
+    typeof value.checkedAt === "string"
+  );
 }
 
 function isMediaSourceStatus(value: unknown): value is MediaSourceStatus {
@@ -281,6 +305,16 @@ export function getReadiness(
   return request<ReadinessResponse>(
     "/api/ready",
     isReadinessResponse,
+    createSignalInit(signal),
+  );
+}
+
+export function getSystemStatus(
+  signal?: AbortSignal,
+): Promise<SystemStatusResponse> {
+  return request<SystemStatusResponse>(
+    "/api/status",
+    isSystemStatusResponse,
     createSignalInit(signal),
   );
 }

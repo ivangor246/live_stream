@@ -8,6 +8,16 @@ export interface ReadinessResponse {
   database: "ok";
 }
 
+export type ServiceHealth = "ok" | "unavailable";
+
+export interface SystemStatusResponse {
+  status: "ready" | "degraded";
+  backend: { status: ServiceHealth };
+  database: { status: ServiceHealth };
+  media: { status: ServiceHealth };
+  checkedAt: string;
+}
+
 export type MediaSourceStatus = "online" | "offline" | "unavailable";
 
 export interface StreamPlayback {
