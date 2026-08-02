@@ -44,11 +44,17 @@ class StreamsService:
 
         return stream
 
-    async def create_stream(self, title: str, is_private: bool) -> Stream:
+    async def create_stream(
+        self,
+        title: str,
+        is_private: bool,
+        scheduled_at: datetime | None,
+    ) -> Stream:
         return await self._streams_repository.create(
             title,
             secrets.token_urlsafe(32),
             is_private,
+            scheduled_at,
         )
 
     async def get_stream_key(self, stream_id: str) -> str:

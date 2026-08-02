@@ -907,7 +907,7 @@ a:focus-visible {
 .stream-card__stats,
 .stream-statistics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
   gap: 0.75rem;
   margin-bottom: 0;
 }
@@ -1265,7 +1265,7 @@ dd {
   }
 
   .stream-card__stats div:last-child {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .stream-player__screen {

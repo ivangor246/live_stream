@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { Stream } from "../shared/stream.js";
+import type { CreateStreamRequest } from "../shared/api.js";
 import {
   createStream as createStreamRequest,
   finishStream,
@@ -90,13 +91,9 @@ export function StreamsPage() {
   }, [t]);
 
   const handleCreate = useCallback(async (
-    title: string,
-    isPrivate: boolean,
+    request: CreateStreamRequest,
   ): Promise<void> => {
-    const createdStream = await createStreamRequest({
-      title,
-      isPrivate,
-    });
+    const createdStream = await createStreamRequest(request);
 
     setStreams((currentStreams) => [createdStream, ...currentStreams]);
   }, []);

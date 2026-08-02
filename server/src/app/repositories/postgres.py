@@ -20,6 +20,7 @@ def _to_stream(record: StreamRecord) -> Stream:
         viewerCount=record.viewer_count,
         reactionCount=record.reaction_count,
         createdAt=record.created_at,
+        scheduledAt=record.scheduled_at,
         startedAt=record.started_at,
         finishedAt=record.finished_at,
     )
@@ -61,6 +62,7 @@ class PostgresStreamsRepository:
         title: str,
         stream_key: str,
         is_private: bool,
+        scheduled_at: datetime | None,
     ) -> Stream:
         record = StreamRecord(
             id=str(uuid4()),
@@ -71,6 +73,7 @@ class PostgresStreamsRepository:
             viewer_count=0,
             reaction_count=0,
             created_at=datetime.now(timezone.utc),
+            scheduled_at=scheduled_at,
             started_at=None,
             finished_at=None,
         )
@@ -94,6 +97,7 @@ class PostgresStreamsRepository:
             record.viewer_count = stream.viewer_count
             record.reaction_count = stream.reaction_count
             record.created_at = stream.created_at
+            record.scheduled_at = stream.scheduled_at
             record.started_at = stream.started_at
             record.finished_at = stream.finished_at
 

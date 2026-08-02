@@ -2,17 +2,19 @@ import { type SubmitEvent, useState } from "react";
 
 import { localizeError } from "../i18n/errorMessages.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
+import type { CreateStreamRequest } from "../shared/api.js";
 import { Button } from "./ui/Button.js";
 
 interface CreateStreamFormState {
   title: string;
   isPrivate: boolean;
+  scheduledAt: string;
   isSubmitting: boolean;
   error: string | null;
 }
 
 interface CreateStreamFormProps {
-  onCreate: (title: string, isPrivate: boolean) => Promise<void>;
+  onCreate: (request: CreateStreamRequest) => Promise<void>;
 }
 
 function validateTitle(title: string): TranslationKey | null {
@@ -29,11 +31,21 @@ function validateTitle(title: string): TranslationKey | null {
   return null;
 }
 
+function toScheduledAt(value: string): string | undefined | null {
+  if (!value) {
+    return undefined;
+  }
+
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? null : new Date(timestamp).toISOString();
+}
+
 export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
   const { t } = useI18n();
   const [formState, setFormState] = useState<CreateStreamFormState>({
     title: "",
     isPrivate: false,
+    scheduledAt: "",
     isSubmitting: false,
     error: null,
   });
@@ -55,6 +67,16 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
     }
 
     const trimmedTitle = formState.title.trim();
+    const scheduledAt = toScheduledAt(formState.scheduledAt);
+
+    if (scheduledAt === null) {
+      setFormState((currentState) => ({
+        ...currentState,
+        error: t("validation.plannedStart"),
+      }));
+
+      return;
+    }
 
     setFormState((currentState) => ({
       ...currentState,
@@ -63,11 +85,16 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
     }));
 
     try {
-      await onCreate(trimmedTitle, formState.isPrivate);
+      await onCreate({
+        title: trimmedTitle,
+        isPrivate: formState.isPrivate,
+        ...(scheduledAt ? { scheduledAt } : {}),
+      });
 
       setFormState({
         title: "",
         isPrivate: false,
+        scheduledAt: "",
         isSubmitting: false,
         error: null,
       });
@@ -98,6 +125,25 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
           setFormState((currentState) => ({
             ...currentState,
             title: event.target.value,
+            error: null,
+          }));
+        }}
+      />
+
+      <label htmlFor="stream-scheduled-at">
+        {t("streams.plannedStartLabel")}
+      </label>
+
+      <input
+        id="stream-scheduled-at"
+        name="scheduledAt"
+        type="datetime-local"
+        value={formState.scheduledAt}
+        disabled={formState.isSubmitting}
+        onChange={(event) => {
+          setFormState((currentState) => ({
+            ...currentState,
+            scheduledAt: event.target.value,
             error: null,
           }));
         }}

@@ -55,6 +55,15 @@ export function StreamCard({
           <dt>{t("streams.createdAt")}</dt>
           <dd>{formatDate(stream.createdAt)}</dd>
         </div>
+
+        <div>
+          <dt>{t("streams.plannedStart")}</dt>
+          <dd>
+            {stream.scheduledAt
+              ? formatDate(stream.scheduledAt)
+              : t("streams.notScheduled")}
+          </dd>
+        </div>
       </dl>
 
       <div className="stream-card__actions">

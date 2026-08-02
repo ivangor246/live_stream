@@ -39,7 +39,11 @@ export interface RecordingSegment {
   durationSeconds: number;
 }
 
-export type CreateStreamRequest = Pick<Stream, "title" | "isPrivate">;
+export interface CreateStreamRequest {
+  title: string;
+  isPrivate: boolean;
+  scheduledAt?: string;
+}
 
 export type CreateStreamResponse = Stream;
 

@@ -10,6 +10,7 @@ platform.
 The current release provides:
 
 - creation, starting, and finishing of stream events;
+- optional planned start times for stream events;
 - persistent stream metadata in PostgreSQL;
 - automatic database migrations in Docker;
 - REST and WebSocket APIs;
@@ -522,7 +523,8 @@ Create a stream with:
 ```json
 {
   "title": "Product launch",
-  "isPrivate": true
+  "isPrivate": true,
+  "scheduledAt": "2026-08-10T17:00:00Z"
 }
 ```
 
@@ -537,6 +539,7 @@ The API returns stream fields in the frontend contract format:
   "viewerCount": 0,
   "reactionCount": 0,
   "createdAt": "2026-08-01T09:00:00Z",
+  "scheduledAt": "2026-08-10T17:00:00Z",
   "startedAt": null,
   "finishedAt": null
 }
@@ -546,7 +549,8 @@ The API returns stream fields in the frontend contract format:
 
 Administrators and operators can download the complete stream list from the
 dashboard as CSV or JSON. The export contains stream identifiers, titles,
-privacy and lifecycle status, counters, and timestamps. It never includes
+privacy and lifecycle status, counters, planned-start and lifecycle timestamps.
+It never includes
 stream keys, viewer-link tokens, sessions, or media credentials.
 
 CSV is the default API format and includes a UTF-8 BOM for spreadsheet
@@ -555,7 +559,7 @@ an automated local workflow.
 
 ## Media workflow
 
-1. Create a stream in the dashboard.
+1. Create a stream in the dashboard and optionally set its planned start time.
 2. Copy the complete RTMP publish URL from the stream page into OBS as a
    custom RTMP server. It contains a short-lived publish credential.
 3. Start the stream in the dashboard. The backend creates its MediaMTX path.
@@ -565,6 +569,10 @@ an automated local workflow.
    seconds and shows the detected source protocol.
 6. Finish the stream in the dashboard. MediaMTX stops recording and the stream
    page exposes its archive. Private viewer links can open the same archive.
+
+The planned start is an informational timestamp stored in UTC. It does not
+start MediaMTX or the stream automatically; an administrator or operator starts
+the stream manually when the source is ready.
 
 The HLS and WebRTC links contain short-lived viewer credentials for copying or
 sharing. The embedded player removes them before making browser requests and
@@ -645,6 +653,7 @@ page-specific styling.
 ## Current limitations
 
 - no source-state history, alerts, or automatic stream lifecycle changes;
+- planned start times do not yet trigger reminders or automatic starts;
 - account invitation links are not delivered by email or another notification service;
 - viewer links are bearer credentials and cannot yet be assigned to named attendees;
 - recording retention is global; there is no per-stream deletion or retention policy yet;

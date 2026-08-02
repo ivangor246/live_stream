@@ -69,6 +69,7 @@ function isStream(value: unknown): value is Stream {
     Number.isInteger(value.reactionCount) &&
     value.reactionCount >= 0 &&
     typeof value.createdAt === "string" &&
+    isNullableString(value.scheduledAt) &&
     isNullableString(value.startedAt) &&
     isNullableString(value.finishedAt)
   );

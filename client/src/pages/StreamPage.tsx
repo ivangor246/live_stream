@@ -67,7 +67,7 @@ function StreamContent({
   actionError,
   onFinish,
 }: StreamContentProps) {
-  const { t } = useI18n();
+  const { formatDate, t } = useI18n();
   const {
     connectionStatus,
     viewerCount,
@@ -98,6 +98,9 @@ function StreamContent({
         <p>
           {t("stream.status")}: <strong>{t(statusKeys[streamStatus])}</strong>
         </p>
+        {stream.scheduledAt && (
+          <p>{t("stream.plannedStart", { date: formatDate(stream.scheduledAt) })}</p>
+        )}
       </header>
 
       <StreamPlayer status={streamStatus} connection={playback} />

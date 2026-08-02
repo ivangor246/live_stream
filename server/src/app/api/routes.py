@@ -264,7 +264,11 @@ def _register_stream_management_routes(
         dependencies=[Depends(auth_service.require_operator)],
     )
     async def create_stream(request: CreateStreamRequest) -> Stream:
-        return await streams_service.create_stream(request.title, request.is_private)
+        return await streams_service.create_stream(
+            request.title,
+            request.is_private,
+            request.scheduled_at,
+        )
 
     @router.get(
         "/streams/{stream_id}/viewer-invitations",

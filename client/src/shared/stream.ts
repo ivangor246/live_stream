@@ -8,6 +8,7 @@ export interface Stream {
   viewerCount: number;
   reactionCount: number;
   createdAt: string;
+  scheduledAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
 }

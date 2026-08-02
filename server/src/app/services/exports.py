@@ -50,6 +50,7 @@ class StreamExportService:
             "viewerCount",
             "reactionCount",
             "createdAt",
+            "scheduledAt",
             "startedAt",
             "finishedAt",
         )
