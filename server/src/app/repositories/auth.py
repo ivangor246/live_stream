@@ -90,21 +90,25 @@ class PostgresAuthRepository:
         async with self._session_factory() as session:
             return list((await session.scalars(query)).all())
 
-    async def update_user_active(
+    async def update_user(
         self,
         user_id: str,
-        is_active: bool,
+        is_active: bool | None,
+        role: str | None,
     ) -> UserRecord | None:
         async with self._session_factory() as session:
             record = await session.get(UserRecord, user_id)
             if record is None:
                 return None
 
-            record.is_active = is_active
-            if not is_active:
+            if is_active is not None:
+                record.is_active = is_active
+            if is_active is False:
                 await session.execute(
                     delete(AuthSessionRecord).where(AuthSessionRecord.user_id == user_id),
                 )
+            if role is not None:
+                record.role = role
 
             await session.commit()
             await session.refresh(record)

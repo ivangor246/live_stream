@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 UserRole = Literal["admin", "operator", "viewer"]
 InviteRole = Literal["operator", "viewer"]
@@ -37,7 +37,15 @@ class ManagedUser(AuthUser):
 class UpdateUserRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    is_active: bool = Field(alias="isActive")
+    is_active: bool | None = Field(default=None, alias="isActive")
+    role: UserRole | None = None
+
+    @model_validator(mode="after")
+    def validate_update(self) -> "UpdateUserRequest":
+        if self.is_active is None and self.role is None:
+            raise ValueError("At least one account field must be provided")
+
+        return self
 
 
 class AuthSetupRequest(BaseModel):

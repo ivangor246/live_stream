@@ -199,14 +199,25 @@ class AuthService:
         request: UpdateUserRequest,
         current_user: AuthUser,
     ) -> ManagedUser:
-        if user_id == current_user.id and not request.is_active:
+        if user_id == current_user.id and request.is_active is False:
             raise AppError(
                 409,
                 "AUTH_SELF_DEACTIVATION",
                 "Administrators cannot deactivate their own account",
             )
 
-        user = await self._repository.update_user_active(user_id, request.is_active)
+        if user_id == current_user.id and request.role not in {None, "admin"}:
+            raise AppError(
+                409,
+                "AUTH_SELF_ROLE_CHANGE",
+                "Administrators cannot reduce their own role",
+            )
+
+        user = await self._repository.update_user(
+            user_id,
+            is_active=request.is_active,
+            role=request.role,
+        )
         if user is None:
             raise AppError(404, "AUTH_USER_NOT_FOUND", "User was not found")
 
