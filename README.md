@@ -28,6 +28,7 @@ The current release provides:
 - CSV and JSON export of safe stream metadata for administrators and operators;
 - on-demand backup of PostgreSQL metadata and MediaMTX recordings;
 - structured JSON logs with request correlation IDs;
+- Prometheus-compatible HTTP metrics and a public service status page;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
@@ -243,6 +244,19 @@ other services. The backend returns the same header in its response. If the
 header is absent or invalid, it creates a new UUID. Set `LOG_LEVEL` to control
 the minimum emitted level; the default is `INFO`.
 
+## Service status and metrics
+
+Open `http://localhost:8080/status` to see the current backend, PostgreSQL,
+and MediaMTX availability. The page is public so an operator can diagnose an
+installation before signing in; it exposes only an aggregate service state.
+
+`GET /api/status` returns the same safe service state as JSON. `GET /metrics`
+returns Prometheus-compatible HTTP request totals and duration summaries. Its
+labels use HTTP method, route template, and status code, never the raw URL.
+Metrics are stored in the backend process and reset on restart. Put `/metrics`
+behind a trusted monitoring network or reverse-proxy rule before exposing the
+installation publicly.
+
 ## Local development
 
 Requirements:
@@ -327,6 +341,8 @@ Run `make help` for the full list:
 | --- | --- | --- |
 | `GET` | `/api/health` | Check that the backend process is running |
 | `GET` | `/api/ready` | Check that the backend can access PostgreSQL |
+| `GET` | `/api/status` | Get backend, PostgreSQL, and MediaMTX availability |
+| `GET` | `/metrics` | Get Prometheus-compatible HTTP metrics |
 | `GET` | `/api/auth/status` | Check setup and session status |
 | `POST` | `/api/auth/setup` | Create the first administrator account |
 | `POST` | `/api/auth/login` | Start an authenticated session |
@@ -487,5 +503,6 @@ page-specific styling.
 - active viewer counts are reset when the backend starts;
 - backups are created on demand; scheduling, remote storage, and guided restore verification are not available yet;
 - logs are not yet sent to an external aggregation service;
+- metrics are local to one backend process and reset after restart;
 - no automatic WebSocket reconnection;
 - no multi-instance backend coordination.
