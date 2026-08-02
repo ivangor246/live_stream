@@ -578,9 +578,43 @@ a:focus-visible {
   margin-bottom: 0;
 }
 
+.streams-section__heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .streams-count {
   color: var(--color-text-soft);
   font-size: 0.85rem;
+}
+
+.stream-export-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.stream-export-actions__label {
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.stream-export-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.stream-export-actions p {
+  width: 100%;
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.8rem;
 }
 
 .stream-filters {
@@ -1030,6 +1064,10 @@ dd {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.35rem;
+  }
+
+  .stream-export-actions {
+    justify-content: flex-start;
   }
 
   .stream-filters {

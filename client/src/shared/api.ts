@@ -48,6 +48,13 @@ export interface ViewerInvitationPlayback {
 
 export type GetStreamViewerInvitationsResponse = StreamViewerInvitation[];
 
+export type StreamExportFormat = "csv" | "json";
+
+export interface StreamExportDownload {
+  blob: Blob;
+  filename: string;
+}
+
 export interface ApiErrorResponse {
   error: {
     code: string;

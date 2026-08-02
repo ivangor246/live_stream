@@ -12,6 +12,8 @@ import type {
   GetStreamRecordingsResponse,
   StreamConnection,
   StreamPlayback,
+  StreamExportDownload,
+  StreamExportFormat,
   ViewerInvitationPlayback,
 } from "../shared/api.js";
 
@@ -222,6 +224,47 @@ async function request<T>(
 
 function createSignalInit(signal?: AbortSignal): RequestInit {
   return signal ? { signal } : {};
+}
+
+function getDownloadFilename(
+  contentDisposition: string | null,
+  fallback: string,
+): string {
+  const filename = contentDisposition?.match(/filename="?([^";]+)"?/i)?.[1];
+
+  return filename ?? fallback;
+}
+
+export async function downloadStreamExport(
+  format: StreamExportFormat,
+): Promise<StreamExportDownload> {
+  const response = await fetch(`/api/streams/export?format=${format}`);
+
+  if (!response.ok) {
+    const responseBody: unknown = await response.json().catch(() => null);
+
+    if (isApiErrorResponse(responseBody)) {
+      throw new ApiError(
+        response.status,
+        responseBody.error.code,
+        responseBody.error.message,
+      );
+    }
+
+    throw new ApiError(
+      response.status,
+      "UNKNOWN_API_ERROR",
+      `Request failed with status ${response.status}`,
+    );
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: getDownloadFilename(
+      response.headers.get("content-disposition"),
+      `live-streams.${format}`,
+    ),
+  };
 }
 
 export function getStreams(signal?: AbortSignal): Promise<GetStreamsResponse> {

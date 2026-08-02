@@ -16,6 +16,7 @@ import {
   type StreamSort,
 } from "../components/StreamFilters.js";
 import { StreamCard } from "../components/StreamCard.js";
+import { StreamExportActions } from "../components/StreamExportActions.js";
 import { Button } from "../components/ui/Button.js";
 import { useAuth } from "../auth/AuthProvider.js";
 import { canManageStreams } from "../shared/auth.js";
@@ -153,15 +154,18 @@ export function StreamsPage() {
 
       <section className="streams-section">
         <header className="streams-section__header">
-          <h2>{t("streams.heading")}</h2>
-          {!isLoading && !loadError && streams.length > 0 && (
-            <span className="streams-count">
-              {t("streams.count", {
-                visible: visibleStreams.length,
-                total: streams.length,
-              })}
-            </span>
-          )}
+          <div className="streams-section__heading">
+            <h2>{t("streams.heading")}</h2>
+            {!isLoading && !loadError && streams.length > 0 && (
+              <span className="streams-count">
+                {t("streams.count", {
+                  visible: visibleStreams.length,
+                  total: streams.length,
+                })}
+              </span>
+            )}
+          </div>
+          {canManage && <StreamExportActions />}
         </header>
 
         {isLoading && <p>{t("streams.loading")}</p>}
