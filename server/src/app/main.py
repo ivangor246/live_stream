@@ -15,6 +15,7 @@ from app.repositories.postgres import PostgresStreamsRepository
 from app.repositories.auth import PostgresAuthRepository
 from app.repositories.stream_invites import PostgresStreamViewerInvitesRepository
 from app.services.auth import AuthService
+from app.services.exports import StreamExportService
 from app.services.media import (
     MediaConnectionService,
     MediaPathService,
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
         ttl_seconds=settings.media_auth_token_ttl_seconds,
     )
     streams_service = StreamsService(streams_repository, media_path_service)
+    stream_export_service = StreamExportService(streams_repository)
     media_auth_service = MediaAuthService(
         streams_repository,
         media_token_service,
@@ -110,6 +112,7 @@ def create_app() -> FastAPI:
             media_connection_service,
             media_recording_service,
             media_status_service,
+            stream_export_service,
             auth_service,
             stream_invitation_service,
         ),

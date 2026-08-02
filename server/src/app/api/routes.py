@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette.background import BackgroundTask
-from starlette.responses import StreamingResponse
+from starlette.responses import Response, StreamingResponse
 
 from app.core.errors import AppError
 from app.database.session import check_database_connection
 from app.schemas.api import HealthResponse, ReadinessResponse
+from app.schemas.export import StreamExportFormat
 from app.schemas.invitation import (
     CreatedStreamViewerInvitation,
     StreamViewerInvitation,
@@ -17,6 +18,7 @@ from app.schemas.invitation import (
 from app.schemas.media import RecordingSegment, StreamConnection, StreamPlayback
 from app.schemas.stream import CreateStreamRequest, Stream
 from app.services.auth import AuthService
+from app.services.exports import StreamExportService
 from app.services.media import (
     MediaConnectionService,
     MediaRecordingService,
@@ -33,6 +35,7 @@ def create_api_router(
     media_connection_service: MediaConnectionService,
     media_recording_service: MediaRecordingService,
     media_status_service: MediaStatusService,
+    stream_export_service: StreamExportService,
     auth_service: AuthService,
     stream_invitation_service: StreamViewerInvitationService,
 ) -> APIRouter:
@@ -56,6 +59,11 @@ def create_api_router(
 
         return ReadinessResponse(status="ok", database="ok")
 
+    _register_stream_export_route(
+        router,
+        stream_export_service,
+        auth_service,
+    )
     _register_stream_read_routes(
         router,
         streams_service,
@@ -192,6 +200,29 @@ def _register_stream_read_routes(
             request.headers.get("range"),
         )
 
+
+def _register_stream_export_route(
+    router: APIRouter,
+    stream_export_service: StreamExportService,
+    auth_service: AuthService,
+) -> None:
+    @router.get(
+        "/streams/export",
+        dependencies=[Depends(auth_service.require_operator)],
+    )
+    async def export_streams(
+        format: StreamExportFormat = StreamExportFormat.CSV,
+    ) -> Response:
+        stream_export = await stream_export_service.create_export(format)
+        return Response(
+            content=stream_export.content,
+            media_type=stream_export.media_type,
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="{stream_export.filename}"'
+                ),
+            },
+        )
 
 def _register_stream_management_routes(
     router: APIRouter,
