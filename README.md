@@ -26,6 +26,7 @@ The current release provides:
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - automatic fMP4 recordings with a protected stream archive;
 - CSV and JSON export of safe stream metadata for administrators and operators;
+- on-demand backup of PostgreSQL metadata and MediaMTX recordings;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
@@ -99,6 +100,7 @@ client/Dockerfile     frontend build and Nginx image
 server/Dockerfile     Python 3.13 backend image
 docker-compose.yml    frontend, backend, PostgreSQL, and MediaMTX services
 Makefile              common local and Docker commands
+scripts/backup.sh     local backup helper for PostgreSQL and recordings
 ```
 
 The old root-level `shared/` directory was removed. The frontend owns its
@@ -138,6 +140,33 @@ The `postgres-data` Docker volume is kept by default. Set a strong
 `POSTGRES_PASSWORD` before exposing the installation beyond a local network.
 Recordings are stored separately in the `media-recordings` Docker volume and
 are retained for 30 days by default.
+
+## Backup
+
+Create an on-demand backup while the PostgreSQL and MediaMTX services are
+running:
+
+```bash
+make backup
+```
+
+The command writes a timestamped directory under `backups/` by default. Use a
+separate local disk or mounted storage by overriding the destination:
+
+```bash
+BACKUP_DIR=/srv/live-stream-backups make backup
+```
+
+Each backup contains a `postgres.dump` file in PostgreSQL custom format, the
+complete `recordings/` directory from MediaMTX, and `manifest.txt`. The backup
+command only reads from running services; it does not stop streams or modify
+Docker volumes. Finish active streams before creating a backup when every
+recording segment must be internally consistent.
+
+Keep backups outside the application host when possible. Restoration is a
+manual operation at this stage: restore `postgres.dump` with `pg_restore` to
+an empty PostgreSQL database, then copy the saved `recordings/` tree back into
+the MediaMTX recordings volume while MediaMTX is stopped.
 
 On the first visit, the dashboard asks you to create a local administrator
 account. Use a password with at least 12 characters. Later visits show the
@@ -268,6 +297,7 @@ Run `make help` for the full list:
 | `make db-up` | Start the local PostgreSQL container |
 | `make db-down` | Stop the local PostgreSQL container |
 | `make db-migrate` | Apply PostgreSQL migrations manually |
+| `make backup` | Create a local PostgreSQL and recordings backup |
 | `make media-up` | Start the local MediaMTX service |
 | `make media-down` | Stop the local MediaMTX service |
 | `make lint` | Run frontend ESLint and backend Ruff checks |
@@ -442,6 +472,6 @@ page-specific styling.
 - recording retention is global; there is no per-stream deletion or retention policy yet;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
-- no automated PostgreSQL backup or retention policy;
+- backups are created on demand; scheduling, remote storage, and guided restore verification are not available yet;
 - no automatic WebSocket reconnection;
 - no multi-instance backend coordination.
