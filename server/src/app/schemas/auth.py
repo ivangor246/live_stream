@@ -58,6 +58,13 @@ class AuthLoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=256)
 
 
+class ChangePasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    current_password: str = Field(alias="currentPassword", min_length=1, max_length=256)
+    new_password: str = Field(alias="newPassword", min_length=12, max_length=256)
+
+
 class CreateInvitationRequest(BaseModel):
     role: InviteRole
 

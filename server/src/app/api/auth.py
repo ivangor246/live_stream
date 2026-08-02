@@ -6,6 +6,7 @@ from app.schemas.auth import (
     AuthSetupRequest,
     AuthStatus,
     AuthUser,
+    ChangePasswordRequest,
     CreatedInvitation,
     CreateInvitationRequest,
     Invitation,
@@ -34,17 +35,7 @@ def create_auth_router(auth_service: AuthService) -> APIRouter:
     ) -> AuthResponse:
         return await auth_service.setup(request, response)
 
-    @router.post("/login", response_model=AuthResponse)
-    async def login(
-        request: AuthLoginRequest,
-        response: Response,
-    ) -> AuthResponse:
-        return await auth_service.login(request, response)
-
-    @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-    async def logout(request: Request, response: Response) -> None:
-        await auth_service.logout(request, response)
-
+    _register_session_routes(router, auth_service)
     _register_user_routes(router, auth_service)
 
     @router.get(
@@ -87,6 +78,27 @@ def create_auth_router(auth_service: AuthService) -> APIRouter:
         return await auth_service.accept_invitation(token, request, response)
 
     return router
+
+
+def _register_session_routes(router: APIRouter, auth_service: AuthService) -> None:
+    @router.post("/login", response_model=AuthResponse)
+    async def login(
+        request: AuthLoginRequest,
+        response: Response,
+    ) -> AuthResponse:
+        return await auth_service.login(request, response)
+
+    @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+    async def logout(request: Request, response: Response) -> None:
+        await auth_service.logout(request, response)
+
+    @router.post("/password", response_model=AuthResponse)
+    async def change_password(
+        request: ChangePasswordRequest,
+        response: Response,
+        current_user: AuthUser = Depends(auth_service.require_user),
+    ) -> AuthResponse:
+        return await auth_service.change_password(request, response, current_user)
 
 
 def _register_user_routes(router: APIRouter, auth_service: AuthService) -> None:

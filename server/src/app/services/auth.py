@@ -13,6 +13,7 @@ from app.schemas.auth import (
     AuthSetupRequest,
     AuthStatus,
     AuthUser,
+    ChangePasswordRequest,
     CreatedInvitation,
     CreateInvitationRequest,
     Invitation,
@@ -113,6 +114,35 @@ class AuthService:
             await self._repository.delete_session(_hash_token(token))
 
         response.delete_cookie(self._cookie_name, path="/")
+
+    async def change_password(
+        self,
+        request: ChangePasswordRequest,
+        response: Response,
+        current_user: AuthUser,
+    ) -> AuthResponse:
+        user = await self._repository.find_user_by_id(current_user.id)
+        if user is None or not verify_password(
+            request.current_password,
+            user.password_salt,
+            user.password_hash,
+        ):
+            raise AppError(
+                401,
+                "AUTH_INVALID_CURRENT_PASSWORD",
+                "The current password is incorrect",
+            )
+
+        password_salt, password_hash = hash_password(request.new_password)
+        if not await self._repository.update_password(
+            user.id,
+            password_hash,
+            password_salt,
+        ):
+            raise _unauthorized_error()
+
+        await self._start_session(user.id, response)
+        return AuthResponse(user=_to_auth_user(user))
 
     async def get_invitation(self, token: str) -> Invitation:
         invitation = await self._repository.find_active_invitation(

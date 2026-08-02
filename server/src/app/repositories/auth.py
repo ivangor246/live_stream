@@ -128,6 +128,25 @@ class PostgresAuthRepository:
             await session.commit()
             return True
 
+    async def update_password(
+        self,
+        user_id: str,
+        password_hash: str,
+        password_salt: str,
+    ) -> bool:
+        async with self._session_factory() as session:
+            record = await session.get(UserRecord, user_id)
+            if record is None:
+                return False
+
+            record.password_hash = password_hash
+            record.password_salt = password_salt
+            await session.execute(
+                delete(AuthSessionRecord).where(AuthSessionRecord.user_id == user_id),
+            )
+            await session.commit()
+            return True
+
     async def delete_session(self, session_id: str) -> None:
         async with self._session_factory() as session:
             record = await session.get(AuthSessionRecord, session_id)
