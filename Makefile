@@ -2,7 +2,7 @@ SHELL := /bin/sh
 
 POETRY ?= poetry
 
-.PHONY: help install install-frontend install-backend db-up db-down db-migrate media-up media-down \
+.PHONY: help install install-frontend install-backend db-up db-down db-migrate media-up media-down backup \
         dev-frontend dev-backend lint build backend-check docker-build docker-up \
         docker-down docker-logs
 
@@ -13,6 +13,7 @@ help:
 		'make db-up            Start the local PostgreSQL service' \
 		'make db-down          Stop the local PostgreSQL service' \
 		'make db-migrate       Apply PostgreSQL migrations' \
+		'make backup           Save PostgreSQL and recordings to BACKUP_DIR (default: backups)' \
 		'make media-up         Start the local MediaMTX service' \
 		'make media-down       Stop the local MediaMTX service' \
 		'make dev-backend      Migrate and start the FastAPI server' \
@@ -40,6 +41,9 @@ db-down:
 
 db-migrate:
 	cd server && $(POETRY) run alembic upgrade head
+
+backup:
+	BACKUP_DIR="$(BACKUP_DIR)" sh scripts/backup.sh
 
 media-up:
 	MEDIA_AUTH_URL=$${MEDIA_AUTH_URL:-http://host.docker.internal:3000/api/media/auth} docker compose up -d mediamtx
