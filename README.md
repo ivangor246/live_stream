@@ -27,6 +27,7 @@ The current release provides:
 - automatic fMP4 recordings with a protected stream archive;
 - CSV and JSON export of safe stream metadata for administrators and operators;
 - on-demand backup of PostgreSQL metadata and MediaMTX recordings;
+- structured JSON logs with request correlation IDs;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
@@ -229,6 +230,18 @@ STREAM_INVITE_TTL_HOURS=168
 Keep `AUTH_SECURE_COOKIE=false` for plain HTTP local development. Adjust
 `AUTH_INVITE_TTL_HOURS` or `STREAM_INVITE_TTL_HOURS` if your installation
 needs a shorter or longer invitation lifetime.
+
+## Logs and request IDs
+
+The backend writes structured JSON logs to standard output. Each completed HTTP
+request includes a timestamp, level, logger, request ID, method, route
+template, status code, and duration. Raw URLs are not written to access logs,
+so query credentials and private viewer-link tokens are not emitted there.
+
+Send a UUID in the `X-Request-ID` request header to correlate a request with
+other services. The backend returns the same header in its response. If the
+header is absent or invalid, it creates a new UUID. Set `LOG_LEVEL` to control
+the minimum emitted level; the default is `INFO`.
 
 ## Local development
 
@@ -473,5 +486,6 @@ page-specific styling.
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
 - backups are created on demand; scheduling, remote storage, and guided restore verification are not available yet;
+- logs are not yet sent to an external aggregation service;
 - no automatic WebSocket reconnection;
 - no multi-instance backend coordination.
