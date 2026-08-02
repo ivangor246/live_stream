@@ -25,6 +25,7 @@ The current release provides:
 - private stream events with revocable viewer access links;
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - automatic fMP4 recordings with a protected stream archive;
+- CSV and JSON export of safe stream metadata for administrators and operators;
 - Russian and English localization;
 - light and dark themes;
 - reusable frontend UI components and configurable visual tokens;
@@ -155,6 +156,7 @@ There are three local roles:
 
 - **Administrator** — manages streams and account invitation links.
 - **Operator** — manages streams and obtains RTMP publishing details.
+  Operators can also export stream metadata.
 - **Viewer** — lists streams and opens their safe playback details, but cannot
   obtain RTMP credentials or change stream state.
 
@@ -295,6 +297,7 @@ Run `make help` for the full list:
 | `GET` | `/api/viewer-invitations/{token}/recordings` | List recordings available through a private viewer link |
 | `GET` | `/api/viewer-invitations/{token}/recordings/playback` | Play one recording through a private viewer link |
 | `GET` | `/api/streams` | Get all streams (any authenticated role) |
+| `GET` | `/api/streams/export?format=csv\|json` | Download safe stream metadata (administrator or operator) |
 | `GET` | `/api/streams/{streamId}` | Get one stream (any authenticated role) |
 | `GET` | `/api/streams/{streamId}/playback` | Get safe HLS/WebRTC playback details (any authenticated role) |
 | `GET` | `/api/streams/{streamId}/recordings` | List protected recording segments (any authenticated role) |
@@ -335,6 +338,17 @@ The API returns stream fields in the frontend contract format:
   "finishedAt": null
 }
 ```
+
+## Export stream metadata
+
+Administrators and operators can download the complete stream list from the
+dashboard as CSV or JSON. The export contains stream identifiers, titles,
+privacy and lifecycle status, counters, and timestamps. It never includes
+stream keys, viewer-link tokens, sessions, or media credentials.
+
+CSV is the default API format and includes a UTF-8 BOM for spreadsheet
+applications. Use `?format=json` when the data is intended for another tool or
+an automated local workflow.
 
 ## Media workflow
 
