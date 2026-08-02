@@ -8,6 +8,7 @@ import type {
   AuthResponse,
   AuthStatus,
   AuthUser,
+  ChangePasswordCredentials,
   CreatedAccountInvitation,
   InviteRole,
   ManagedUser,
@@ -185,6 +186,22 @@ export function logout(): Promise<null> {
     "/api/auth/logout",
     (value: unknown): value is null => value === null,
     { method: "POST" },
+  );
+}
+
+export function changePassword(
+  credentials: ChangePasswordCredentials,
+): Promise<AuthResponse> {
+  return request<AuthResponse>(
+    "/api/auth/password",
+    isAuthResponse,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(credentials),
+    },
   );
 }
 

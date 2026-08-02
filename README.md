@@ -28,6 +28,7 @@ The current release provides:
 - administrator account list with reversible account deactivation;
 - administrator role changes for existing accounts;
 - safe removal of disabled accounts;
+- self-service password changes with other sessions revoked;
 - private stream events with revocable viewer access links;
 - short-lived per-stream credentials for RTMP publishing and HLS/WebRTC viewing;
 - automatic fMP4 recordings with a protected stream archive;
@@ -299,6 +300,12 @@ dashboard. The backend rejects attempts to delete active accounts or the
 current administrator, and PostgreSQL removes the deleted account's sessions
 through the foreign-key relationship. Streams and recordings are not deleted.
 
+Every signed-in user can change their own password in the dashboard. The form
+requires the current password and a new password of at least 12 characters.
+Changing it revokes all existing sessions, then issues a fresh session for the
+browser that made the request. Passwords and session tokens are stored only as
+hashes.
+
 When creating a stream, an administrator or operator can mark it as private.
 For a private stream, the stream page provides shareable viewer access links.
 The recipient can open a link and watch the stream without a dashboard account.
@@ -480,6 +487,7 @@ Run `make help` for the full list:
 | `POST` | `/api/auth/setup` | Create the first administrator account |
 | `POST` | `/api/auth/login` | Start an authenticated session |
 | `POST` | `/api/auth/logout` | End the current session |
+| `POST` | `/api/auth/password` | Change the current password and revoke existing sessions |
 | `GET` | `/api/auth/users` | List dashboard accounts (administrator only) |
 | `PATCH` | `/api/auth/users/{userId}` | Enable/disable an account or change its role (administrator only) |
 | `DELETE` | `/api/auth/users/{userId}` | Permanently delete a disabled account (administrator only) |

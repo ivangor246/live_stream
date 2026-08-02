@@ -27,6 +27,11 @@ export interface AuthCredentials {
   password: string;
 }
 
+export interface ChangePasswordCredentials {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AccountInvitation {
   id: string;
   role: InviteRole;

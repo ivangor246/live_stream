@@ -22,6 +22,7 @@ import { useAuth } from "../auth/AuthProvider.js";
 import { canManageStreams } from "../shared/auth.js";
 import { InvitationPanel } from "../components/InvitationPanel.js";
 import { AccountPanel } from "../components/AccountPanel.js";
+import { ChangePasswordPanel } from "../components/ChangePasswordPanel.js";
 
 type StreamStatusAction = (streamId: string) => Promise<Stream>;
 
@@ -151,6 +152,7 @@ export function StreamsPage() {
       </header>
 
       {canManage && <CreateStreamForm onCreate={handleCreate} />}
+      {user && <ChangePasswordPanel />}
       {user?.role === "admin" && <InvitationPanel />}
       {user?.role === "admin" && <AccountPanel currentUserId={user.id} />}
 

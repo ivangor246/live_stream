@@ -406,7 +406,8 @@ h2 {
 
 .invitation-panel,
 .viewer-access-panel,
-.account-panel {
+.account-panel,
+.password-change-panel {
   display: grid;
   gap: 1rem;
   padding: 1.25rem;
@@ -420,7 +421,8 @@ h2 {
 .viewer-access-panel__list small,
 .account-panel header p,
 .account-panel > p,
-.account-panel__details small {
+.account-panel__details small,
+.password-change-panel header p {
   margin-bottom: 0;
   color: var(--color-text-soft);
 }
@@ -568,6 +570,26 @@ h2 {
   padding: 0.3rem 0.5rem;
   color: var(--color-text);
   background: var(--color-surface-elevated);
+}
+
+.password-change-panel form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.password-change-panel label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.password-change-panel__success {
+  margin-bottom: 0;
+  color: var(--color-success);
 }
 
 input {
@@ -1186,6 +1208,14 @@ dd {
 
   .create-form {
     grid-template-columns: 1fr;
+  }
+
+  .password-change-panel form {
+    grid-template-columns: 1fr;
+  }
+
+  .password-change-panel .button {
+    width: 100%;
   }
 
   .streams-section__header {
