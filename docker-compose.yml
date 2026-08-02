@@ -68,6 +68,13 @@ services:
     ports:
       - "${FRONTEND_BIND_ADDRESS:-0.0.0.0}:${FRONTEND_PORT:-8080}:80"
 
+  recordings-maintenance:
+    image: alpine:3.22
+    profiles: ["maintenance"]
+    volumes:
+      - media-recordings:/recordings
+    entrypoint: ["/bin/sh", "-c"]
+
 volumes:
   postgres-data:
   media-recordings:

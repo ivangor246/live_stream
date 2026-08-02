@@ -106,6 +106,7 @@ docker-compose.https.yml
 deploy/               Caddy configuration and HTTPS environment template
 Makefile              common local and Docker commands
 scripts/backup.sh     local backup helper for PostgreSQL and recordings
+scripts/restore.sh    confirmed local backup restore helper
 ```
 
 The old root-level `shared/` directory was removed. The frontend owns its
@@ -214,10 +215,45 @@ command only reads from running services; it does not stop streams or modify
 Docker volumes. Finish active streams before creating a backup when every
 recording segment must be internally consistent.
 
-Keep backups outside the application host when possible. Restoration is a
-manual operation at this stage: restore `postgres.dump` with `pg_restore` to
-an empty PostgreSQL database, then copy the saved `recordings/` tree back into
-the MediaMTX recordings volume while MediaMTX is stopped.
+Keep backups outside the application host when possible. Restore one with the
+following sequence:
+
+```bash
+make docker-down
+RESTORE_DRY_RUN=true make restore BACKUP=backups/20260802T100000Z
+make restore BACKUP=backups/20260802T100000Z
+make docker-up
+```
+
+For an HTTPS deployment, use `make https-down` and `make https-up` for the
+first and last commands instead. The restore command verifies the backup
+layout, requires the exact `RESTORE` confirmation, drops and recreates the
+configured PostgreSQL database, and replaces only the MediaMTX recordings
+volume. It refuses to run while the application or MediaMTX is active. The
+PostgreSQL container may remain running after the operation; the final start
+command applies any pending Alembic migrations.
+
+## Upgrade
+
+Create a backup before every upgrade. For an installation cloned from this
+repository, update the desired revision and rebuild the services:
+
+```bash
+make backup
+git pull --ff-only
+make docker-up
+```
+
+Use `make https-up` instead of `make docker-up` when the Caddy deployment is
+configured. The backend container applies Alembic migrations before starting,
+so do not run several application versions against the same database at once.
+After the restart, open `/status` and confirm that backend, PostgreSQL, and
+MediaMTX report `ok`.
+
+If an upgrade fails, stop the deployment, return the repository to the last
+known working revision, restore the pre-upgrade backup, and start that same
+deployment variant again. A database backup cannot safely downgrade a schema
+without restoring the matching application version.
 
 On the first visit, the dashboard asks you to create a local administrator
 account. Use a password with at least 12 characters. Later visits show the
@@ -374,6 +410,7 @@ Run `make help` for the full list:
 | `make db-down` | Stop the local PostgreSQL container |
 | `make db-migrate` | Apply PostgreSQL migrations manually |
 | `make backup` | Create a local PostgreSQL and recordings backup |
+| `make restore BACKUP=…` | Confirm and restore one local PostgreSQL and recordings backup |
 | `make media-up` | Start the local MediaMTX service |
 | `make media-down` | Stop the local MediaMTX service |
 | `make lint` | Run frontend ESLint and backend Ruff checks |
@@ -552,7 +589,7 @@ page-specific styling.
 - recording retention is global; there is no per-stream deletion or retention policy yet;
 - active WebSocket viewer state is local to one backend process;
 - active viewer counts are reset when the backend starts;
-- backups are created on demand; scheduling, remote storage, and guided restore verification are not available yet;
+- backups are created on demand; scheduling, remote storage, and integrity verification are not available yet;
 - logs are not yet sent to an external aggregation service;
 - metrics are local to one backend process and reset after restart;
 - no automatic WebSocket reconnection;
