@@ -223,6 +223,28 @@ class AuthService:
 
         return _to_managed_user(user)
 
+    async def delete_user(self, user_id: str, current_user: AuthUser) -> None:
+        if user_id == current_user.id:
+            raise AppError(
+                409,
+                "AUTH_SELF_DELETION",
+                "Administrators cannot delete their own account",
+            )
+
+        user = await self._repository.find_user_by_id(user_id)
+        if user is None:
+            raise AppError(404, "AUTH_USER_NOT_FOUND", "User was not found")
+
+        if user.is_active:
+            raise AppError(
+                409,
+                "AUTH_USER_ACTIVE",
+                "Disable an account before deleting it",
+            )
+
+        if not await self._repository.delete_user(user_id):
+            raise AppError(404, "AUTH_USER_NOT_FOUND", "User was not found")
+
     async def require_admin(self, request: Request) -> AuthUser:
         user = await self.require_user(request)
         if user.role != "admin":

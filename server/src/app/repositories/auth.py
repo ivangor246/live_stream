@@ -26,6 +26,10 @@ class PostgresAuthRepository:
         async with self._session_factory() as session:
             return await session.scalar(query)
 
+    async def find_user_by_id(self, user_id: str) -> UserRecord | None:
+        async with self._session_factory() as session:
+            return await session.get(UserRecord, user_id)
+
     async def create_user(
         self,
         username: str,
@@ -113,6 +117,16 @@ class PostgresAuthRepository:
             await session.commit()
             await session.refresh(record)
             return record
+
+    async def delete_user(self, user_id: str) -> bool:
+        async with self._session_factory() as session:
+            record = await session.get(UserRecord, user_id)
+            if record is None:
+                return False
+
+            await session.delete(record)
+            await session.commit()
+            return True
 
     async def delete_session(self, session_id: str) -> None:
         async with self._session_factory() as session:

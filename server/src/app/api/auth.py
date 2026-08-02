@@ -103,3 +103,10 @@ def _register_user_routes(router: APIRouter, auth_service: AuthService) -> None:
         current_user: AuthUser = Depends(auth_service.require_admin),
     ) -> ManagedUser:
         return await auth_service.update_user(user_id, request, current_user)
+
+    @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+    async def delete_user(
+        user_id: str,
+        current_user: AuthUser = Depends(auth_service.require_admin),
+    ) -> None:
+        await auth_service.delete_user(user_id, current_user)
