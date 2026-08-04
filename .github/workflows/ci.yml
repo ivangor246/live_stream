@@ -39,7 +39,7 @@ jobs:
           python-version: '3.13'
       - run: pip install 'poetry==2.1.3'
       - run: poetry install --no-interaction
-      - run: poetry run ruff check src migrations
+      - run: poetry run ruff check src migrations tests
       - run: poetry run python -m compileall -q src/app
       - run: poetry run python -c 'from app.main import app; print(app.title)'
       - run: poetry run python -m unittest discover -s tests

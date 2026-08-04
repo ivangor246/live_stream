@@ -71,7 +71,7 @@ dev-backend:
 
 lint:
 	cd client && npm run lint
-	cd server && $(POETRY) run ruff check src
+	cd server && $(POETRY) run ruff check src migrations tests
 
 build:
 	cd client && npm run build
