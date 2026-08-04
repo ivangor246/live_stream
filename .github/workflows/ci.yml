@@ -42,6 +42,7 @@ jobs:
       - run: poetry run ruff check src migrations
       - run: poetry run python -m compileall -q src/app
       - run: poetry run python -c 'from app.main import app; print(app.title)'
+      - run: poetry run python -m unittest discover -s tests
 
   docker-smoke:
     name: Docker smoke test

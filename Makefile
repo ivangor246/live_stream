@@ -4,7 +4,7 @@ POETRY ?= poetry
 HTTPS_COMPOSE = docker compose --env-file deploy/.env.https -f docker-compose.yml -f docker-compose.https.yml
 
 .PHONY: help install install-frontend install-backend db-up db-down db-migrate media-up media-down backup \
-        dev-frontend dev-backend lint build backend-check docker-build docker-up \
+        dev-frontend dev-backend lint build backend-check backend-test docker-build docker-up \
         docker-down docker-logs https-up https-down restore
 
 help:
@@ -22,6 +22,7 @@ help:
 		'make lint             Run frontend and backend lint checks' \
 		'make build            Build the frontend' \
 		'make backend-check    Compile-check the backend' \
+		'make backend-test     Run backend regression tests' \
 		'make docker-build     Build both Docker images' \
 		'make docker-up        Build and start frontend and backend' \
 		'make docker-down      Stop Docker services' \
@@ -78,6 +79,9 @@ build:
 backend-check:
 	cd server && $(POETRY) run python -m compileall -q src/app
 	cd server && $(POETRY) run python -c 'from app.main import app; print(app.title)'
+
+backend-test:
+	cd server && $(POETRY) run python -m unittest discover -s tests
 
 docker-build:
 	docker compose build
