@@ -2,7 +2,7 @@ from collections.abc import Callable
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models import AuthSessionRecord, UserInviteRecord, UserRecord
@@ -30,13 +30,13 @@ class PostgresAuthRepository:
         async with self._session_factory() as session:
             return await session.get(UserRecord, user_id)
 
-    async def create_user(
+    async def create_initial_admin(
         self,
         username: str,
         password_hash: str,
         password_salt: str,
         created_at: datetime,
-    ) -> UserRecord:
+    ) -> UserRecord | None:
         record = UserRecord(
             id=str(uuid4()),
             username=username,
@@ -47,9 +47,16 @@ class PostgresAuthRepository:
         )
 
         async with self._session_factory() as session:
-            session.add(record)
-            await session.commit()
-            await session.refresh(record)
+            async with session.begin():
+                await session.execute(text("LOCK TABLE users IN EXCLUSIVE MODE"))
+                user_count = await session.scalar(select(func.count()).select_from(UserRecord))
+                if (user_count or 0) > 0:
+                    return None
+
+                session.add(record)
+                await session.flush()
+                await session.refresh(record)
+
             return record
 
     async def find_user_by_session(

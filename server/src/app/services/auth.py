@@ -52,13 +52,6 @@ class AuthService:
         request: AuthSetupRequest,
         response: Response,
     ) -> AuthResponse:
-        if await self._repository.has_users():
-            raise AppError(
-                409,
-                "AUTH_SETUP_COMPLETE",
-                "The administrator account is already configured",
-            )
-
         username = _normalize_username(request.username)
         if not username:
             raise AppError(
@@ -68,20 +61,18 @@ class AuthService:
             )
 
         password_salt, password_hash = hash_password(request.password)
-
-        try:
-            user = await self._repository.create_user(
-                username=username,
-                password_hash=password_hash,
-                password_salt=password_salt,
-                created_at=_utc_now(),
-            )
-        except IntegrityError as error:
+        user = await self._repository.create_initial_admin(
+            username=username,
+            password_hash=password_hash,
+            password_salt=password_salt,
+            created_at=_utc_now(),
+        )
+        if user is None:
             raise AppError(
                 409,
                 "AUTH_SETUP_COMPLETE",
                 "The administrator account is already configured",
-            ) from error
+            )
 
         await self._start_session(user.id, response)
         return AuthResponse(user=_to_auth_user(user))
