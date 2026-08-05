@@ -1,3 +1,6 @@
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+
 import { useI18n } from "../../i18n/I18nProvider.js";
 import { useTheme } from "../../theme/ThemeProvider.js";
 import { Button } from "../ui/Button.js";
@@ -14,7 +17,11 @@ export function ThemeSwitcher() {
       variant="ghost"
       onClick={toggleTheme}
     >
-      <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
+      {theme === "dark" ? (
+        <DarkModeIcon aria-hidden="true" fontSize="small" />
+      ) : (
+        <LightModeIcon aria-hidden="true" fontSize="small" />
+      )}
       <span className="theme-switcher__label">
         {theme === "light" ? t("controls.lightTheme") : t("controls.darkTheme")}
       </span>
