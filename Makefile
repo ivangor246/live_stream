@@ -5,10 +5,16 @@ HTTPS_COMPOSE = docker compose --env-file deploy/.env.https -f docker-compose.ym
 
 .PHONY: help install install-frontend install-backend db-up db-down db-migrate media-up media-down backup \
         dev-frontend dev-backend lint build backend-check backend-test docker-build docker-up \
-        docker-down docker-logs https-up https-down restore
+        docker-down docker-logs up down start stop restart logs https-up https-down restore
 
 help:
 	@printf '%s\n' \
+		'make up               Build and start the complete Docker stack in the background' \
+		'make down             Stop and remove the complete Docker stack' \
+		'make start            Alias for make up' \
+		'make stop             Alias for make down' \
+		'make restart          Recreate the complete Docker stack' \
+		'make logs             Follow logs from all Docker services' \
 		'make install          Install frontend and backend dependencies' \
 		'make dev-frontend     Start the Vite development server' \
 		'make db-up            Start the local PostgreSQL service' \
@@ -24,11 +30,28 @@ help:
 		'make backend-check    Compile-check the backend' \
 		'make backend-test     Run backend regression tests' \
 		'make docker-build     Build both Docker images' \
-		'make docker-up        Build and start frontend and backend' \
-		'make docker-down      Stop Docker services' \
-		'make docker-logs      Follow Docker service logs' \
+		'make docker-up        Build and start the complete Docker stack (alias for make up)' \
+		'make docker-down      Stop and remove the complete Docker stack (alias for make down)' \
+		'make docker-logs      Follow Docker service logs (alias for make logs)' \
 		'make https-up         Start the HTTPS deployment from deploy/.env.https' \
 		'make https-down       Stop the HTTPS deployment'
+
+up:
+	docker compose up --build -d
+
+down:
+	docker compose down
+
+start: up
+
+stop: down
+
+restart:
+	$(MAKE) down
+	$(MAKE) up
+
+logs:
+	docker compose logs -f
 
 install: install-frontend install-backend
 
@@ -86,14 +109,11 @@ backend-test:
 docker-build:
 	docker compose build
 
-docker-up:
-	docker compose up --build
+docker-up: up
 
-docker-down:
-	docker compose down
+docker-down: down
 
-docker-logs:
-	docker compose logs -f
+docker-logs: logs
 
 https-up:
 	$(HTTPS_COMPOSE) up --build -d
