@@ -1,3 +1,9 @@
+import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import ThumbDownAltIcon from "@mui/icons-material/ThumbDownAlt";
+import ThumbUpAltIcon from "@mui/icons-material/ThumbUpAlt";
+import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
+import type { ElementType } from "react";
+
 import type { ReactionType } from "../shared/websocket.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 import { Button } from "./ui/Button.js";
@@ -11,24 +17,29 @@ interface ReactionPanelProps {
 interface ReactionOption {
   type: ReactionType;
   labelKey: TranslationKey;
-  symbol: string;
+  Icon: ElementType;
 }
 
 const reactionOptions: ReactionOption[] = [
   {
     type: "like",
     labelKey: "reaction.like",
-    symbol: "👍",
+    Icon: ThumbUpAltIcon,
+  },
+  {
+    type: "dislike",
+    labelKey: "reaction.dislike",
+    Icon: ThumbDownAltIcon,
   },
   {
     type: "fire",
     labelKey: "reaction.fire",
-    symbol: "🔥",
+    Icon: LocalFireDepartmentIcon,
   },
   {
     type: "clap",
     labelKey: "reaction.clap",
-    symbol: "👏",
+    Icon: VolunteerActivismIcon,
   },
 ];
 
@@ -45,18 +56,12 @@ export function ReactionPanel({
 
       <div className="reaction-panel__actions">
         {reactionOptions.map((option) => (
-          <Button
-            variant="reaction"
+          <ReactionButton
             key={option.type}
             disabled={disabled}
-            aria-label={t(option.labelKey)}
-            onClick={() => {
-              onReaction(option.type);
-            }}
-          >
-            <span aria-hidden="true">{option.symbol}</span>{" "}
-            {t(option.labelKey)}
-          </Button>
+            option={option}
+            onClick={onReaction}
+          />
         ))}
       </div>
 
@@ -74,5 +79,30 @@ export function ReactionPanel({
           : t("stream.noReactions")}
       </p>
     </section>
+  );
+}
+
+interface ReactionButtonProps {
+  disabled: boolean;
+  option: ReactionOption;
+  onClick: (reaction: ReactionType) => void;
+}
+
+function ReactionButton({ disabled, option, onClick }: ReactionButtonProps) {
+  const { t } = useI18n();
+  const { Icon } = option;
+
+  return (
+    <Button
+      aria-label={t(option.labelKey)}
+      disabled={disabled}
+      variant="reaction"
+      onClick={() => {
+        onClick(option.type);
+      }}
+    >
+      <Icon aria-hidden="true" fontSize="small" />
+      {t(option.labelKey)}
+    </Button>
   );
 }

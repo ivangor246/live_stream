@@ -7,7 +7,7 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
-ReactionType: TypeAlias = Literal["like", "fire", "clap"]
+ReactionType: TypeAlias = Literal["like", "dislike", "fire", "clap"]
 
 
 class ViewerJoinPayload(StrictModel):

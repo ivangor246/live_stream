@@ -40,6 +40,7 @@ function isReactionType(
 ): value is ReactionType {
   return (
     value === "like" ||
+    value === "dislike" ||
     value === "fire" ||
     value === "clap"
   );

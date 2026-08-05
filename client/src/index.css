@@ -73,14 +73,12 @@ body {
 }
 
 button,
-input,
-select {
+input {
   font: inherit;
 }
 
 button,
-a,
-select {
+a {
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -154,7 +152,6 @@ h2 {
 }
 
 .brand__mark {
-  position: relative;
   display: grid;
   width: 2rem;
   height: 2rem;
@@ -165,95 +162,93 @@ h2 {
   box-shadow: 0 8px 18px var(--color-focus);
 }
 
-.brand__mark::before {
-  width: 0.75rem;
-  height: 0.75rem;
-  border: 1.5px solid currentColor;
-  border-radius: 50%;
-  content: "";
-}
-
-.brand__mark::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0.25rem;
-  height: 0.25rem;
-  border-radius: 50%;
-  background: currentColor;
-  content: "";
-  transform: translate(-50%, -50%);
-}
-
 .app-header__controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.system-status {
-  display: inline-flex;
+.app-select,
+.app-date-time-picker {
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.app-select {
+  min-width: 100%;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+}
+
+.app-select .MuiSelect-select {
+  display: flex;
+  min-height: 2.65rem;
   align-items: center;
-  margin: 0;
+  padding: 0.5rem 2.65rem 0.5rem 0.75rem;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.app-select .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-border);
+}
+
+.app-select:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-text-soft);
+}
+
+.app-select.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-primary);
+  border-width: 1px;
+  box-shadow: 0 0 0 4px var(--color-focus);
+}
+
+.app-select .MuiSelect-icon {
+  right: 0.7rem;
   color: var(--color-text-soft);
-  font-size: 0.8rem;
-  white-space: nowrap;
 }
 
-.system-status-link {
-  color: inherit;
-  text-decoration: none;
+.app-select.Mui-disabled {
+  opacity: 0.55;
 }
 
-.system-status-link:hover {
-  color: inherit;
-}
-
-.system-status__dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-right: 0.4rem;
-  border-radius: 50%;
-  background: var(--color-warning);
-}
-
-.system-status--ready .system-status__dot {
-  background: var(--color-success);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 16%, transparent);
-}
-
-.system-status--unavailable .system-status__dot {
-  background: var(--color-danger);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-danger) 14%, transparent);
-}
-
-.language-switcher select {
-  appearance: none;
-  min-height: 2.25rem;
+.app-select-menu.MuiPaper-root {
+  margin-top: 0.35rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 0.35rem 2rem 0.35rem 0.6rem;
   color: var(--color-text);
   background: var(--color-surface-elevated);
-  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.app-select-menu .MuiList-root {
+  padding: 0.35rem;
+}
+
+.app-select-menu .MuiMenuItem-root {
+  min-height: 2.45rem;
+  border-radius: calc(var(--radius-md) - 0.15rem);
+  padding: 0.5rem 0.65rem;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.app-select-menu .MuiMenuItem-root:hover,
+.app-select-menu .MuiMenuItem-root.Mui-focusVisible {
+  background: var(--color-surface-muted);
+}
+
+.app-select-menu .MuiMenuItem-root.Mui-selected,
+.app-select-menu .MuiMenuItem-root.Mui-selected:hover {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 13%, transparent);
 }
 
 .language-switcher {
-  position: relative;
-  display: inline-flex;
-}
-
-.language-switcher::after {
-  position: absolute;
-  top: 50%;
-  right: 0.8rem;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-right: 1.5px solid var(--color-text-soft);
-  border-bottom: 1.5px solid var(--color-text-soft);
-  content: "";
-  pointer-events: none;
-  transform: translateY(-65%) rotate(45deg);
+  min-width: 4.25rem;
 }
 
 .auth-account {
@@ -395,9 +390,14 @@ h2 {
 
 .create-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 1.25rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .create-form h2,
@@ -409,6 +409,110 @@ h2 {
 .create-form h2,
 .create-form label {
   margin-bottom: 0;
+}
+
+.create-form__date-time {
+  min-width: 0;
+}
+
+.app-date-time-picker {
+  width: 100%;
+}
+
+.app-date-time-picker .MuiPickersTextField-root,
+.app-date-time-picker .MuiTextField-root {
+  width: 100%;
+}
+
+.app-date-time-picker .MuiPickersOutlinedInput-root,
+.app-date-time-picker .MuiOutlinedInput-root {
+  min-height: 2.75rem;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  background: var(--color-surface-elevated);
+  font-family: inherit;
+}
+
+.app-date-time-picker .MuiPickersOutlinedInput-notchedOutline,
+.app-date-time-picker .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-border);
+}
+
+.app-date-time-picker:hover .MuiPickersOutlinedInput-notchedOutline,
+.app-date-time-picker:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-text-soft);
+}
+
+.app-date-time-picker .MuiPickersOutlinedInput-root.Mui-focused .MuiPickersOutlinedInput-notchedOutline,
+.app-date-time-picker .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-primary);
+  border-width: 1px;
+  box-shadow: 0 0 0 4px var(--color-focus);
+}
+
+.app-date-time-picker .MuiInputLabel-root,
+.app-date-time-picker .MuiPickersInputBase-root,
+.app-date-time-picker .MuiPickersSectionList-root,
+.app-date-time-picker .MuiPickersSectionList-sectionContent {
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.app-date-time-picker .MuiInputLabel-root.Mui-focused {
+  color: var(--color-primary);
+}
+
+.app-date-time-picker .MuiIconButton-root {
+  border-radius: calc(var(--radius-md) - 0.15rem);
+  color: var(--color-text-soft);
+}
+
+.app-date-time-picker .MuiIconButton-root:hover {
+  color: var(--color-primary);
+  background: var(--color-surface-muted);
+}
+
+.app-date-time-picker__paper.MuiPaper-root {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-card);
+}
+
+.app-date-time-picker__paper .MuiPickersLayout-root,
+.app-date-time-picker__paper .MuiDayCalendar-weekDayLabel,
+.app-date-time-picker__paper .MuiPickersCalendarHeader-label,
+.app-date-time-picker__paper .MuiPickersToolbar-root,
+.app-date-time-picker__paper .MuiPickersToolbarText-root,
+.app-date-time-picker__paper .MuiMultiSectionDigitalClock-root,
+.app-date-time-picker__paper .MuiMenuItem-root {
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.app-date-time-picker__paper .MuiButtonBase-root {
+  border-radius: calc(var(--radius-md) - 0.15rem);
+  color: var(--color-text);
+}
+
+.app-date-time-picker__paper .MuiButtonBase-root:hover {
+  background: var(--color-surface-muted);
+}
+
+.app-date-time-picker__paper .MuiPickersDay-root.Mui-selected,
+.app-date-time-picker__paper .MuiMenuItem-root.Mui-selected {
+  color: #ffffff;
+  background: var(--color-primary);
+}
+
+.app-date-time-picker__paper .MuiPickersDay-root.Mui-selected:hover,
+.app-date-time-picker__paper .MuiMenuItem-root.Mui-selected:hover {
+  background: var(--color-primary-hover);
+}
+
+.app-date-time-picker__paper .MuiPickersDay-root.MuiPickersDay-today:not(.Mui-selected) {
+  border-color: var(--color-primary);
 }
 
 .create-form label {
@@ -425,10 +529,45 @@ h2 {
 }
 
 .create-form__checkbox input {
-  width: auto;
-  min-height: auto;
-  margin-top: 0.2rem;
-  accent-color: var(--color-primary);
+  display: grid;
+  width: 1.15rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  min-height: 1.15rem;
+  flex: 0 0 1.15rem;
+  margin: 0.15rem 0 0;
+  appearance: none;
+  place-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 0.35rem;
+  padding: 0;
+  background: var(--color-surface-elevated);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.create-form__checkbox input::before {
+  width: 0.55rem;
+  height: 0.3rem;
+  border-bottom: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  content: "";
+  transform: rotate(-45deg) scale(0);
+  transition: transform 100ms ease-out;
+}
+
+.create-form__checkbox input:checked {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.create-form__checkbox input:checked::before {
+  transform: rotate(-45deg) scale(1);
+}
+
+.create-form__checkbox input:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .create-form__checkbox span {
@@ -471,21 +610,17 @@ h2 {
   gap: 0.75rem;
 }
 
-.invitation-panel__form label {
+.invitation-panel__role-label {
   display: grid;
+  align-self: center;
   gap: 0.35rem;
   color: var(--color-text);
   font-size: 0.875rem;
   font-weight: 700;
 }
 
-.invitation-panel__form select {
-  min-height: 2.65rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 0.5rem 0.7rem;
-  color: var(--color-text);
-  background: var(--color-surface-elevated);
+.invitation-panel__form .app-select {
+  min-width: 10rem;
 }
 
 .invitation-panel__list {
@@ -600,13 +735,14 @@ h2 {
   font-weight: 700;
 }
 
-.account-panel__role select {
+.account-panel__role .app-select {
+  min-width: 9rem;
+}
+
+.account-panel__role .app-select .MuiSelect-select {
   min-height: 2.25rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 0.3rem 0.5rem;
-  color: var(--color-text);
-  background: var(--color-surface-elevated);
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
 }
 
 .password-change-panel form {
@@ -645,8 +781,7 @@ input::placeholder {
   color: var(--color-text-soft);
 }
 
-input:focus,
-select:focus-visible {
+input:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 4px var(--color-focus);
   outline: none;
@@ -764,6 +899,7 @@ a:focus-visible {
 }
 
 .streams-section {
+  width: 100%;
   padding: 1.25rem;
 }
 
@@ -820,7 +956,7 @@ a:focus-visible {
 
 .stream-filters {
   display: flex;
-  align-items: end;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 1rem;
@@ -837,13 +973,10 @@ a:focus-visible {
   font-weight: 700;
 }
 
-.stream-filters__field select {
+.stream-filters__field .app-select .MuiSelect-select {
   min-height: 2.35rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 0.4rem 0.6rem;
-  color: var(--color-text);
-  background: var(--color-surface-elevated);
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
 }
 
 .stream-filters__summary {

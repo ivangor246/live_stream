@@ -3,6 +3,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useParams } from "react-router";
 
 import type {
@@ -91,7 +92,8 @@ function StreamContent({
   return (
     <main className="page-shell page-shell--narrow stream-page">
       <ButtonLink className="back-link" to="/" variant="ghost">
-        ← {t("navigation.back")}
+        <ArrowBackIcon aria-hidden="true" fontSize="small" />
+        {t("navigation.back")}
       </ButtonLink>
 
       <header className="page-header stream-page__header">

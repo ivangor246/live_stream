@@ -6,6 +6,7 @@ import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 import type { ManagedUser, UserRole } from "../shared/auth.js";
 import { Button } from "./ui/Button.js";
 import { Card } from "./ui/Card.js";
+import { SelectField } from "./ui/SelectField.js";
 import { StatusBadge } from "./ui/StatusBadge.js";
 
 const roleKeys: Record<UserRole, TranslationKey> = {
@@ -161,11 +162,15 @@ export function AccountPanel({ currentUserId }: AccountPanelProps) {
                     <>
                       <label className="account-panel__role">
                         <span>{t("accounts.roleLabel")}</span>
-                        <select
+                        <SelectField
+                          ariaLabel={t("accounts.roleLabel")}
                           value={user.role}
                           disabled={isUpdating}
-                          onChange={(event) => {
-                            const nextRole = event.target.value;
+                          options={(Object.keys(roleKeys) as UserRole[]).map((role) => ({
+                            value: role,
+                            label: t(roleKeys[role]),
+                          }))}
+                          onChange={(nextRole) => {
                             if (
                               nextRole === "admin" ||
                               nextRole === "operator" ||
@@ -174,11 +179,7 @@ export function AccountPanel({ currentUserId }: AccountPanelProps) {
                               void handleRoleChange(user, nextRole);
                             }
                           }}
-                        >
-                          {Object.entries(roleKeys).map(([role, roleKey]) => (
-                            <option key={role} value={role}>{t(roleKey)}</option>
-                          ))}
-                        </select>
+                        />
                       </label>
                       <Button
                         disabled={isUpdating}

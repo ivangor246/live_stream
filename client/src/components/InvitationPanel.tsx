@@ -15,6 +15,7 @@ import type {
 import { Button } from "./ui/Button.js";
 import { Card } from "./ui/Card.js";
 import { CopyField } from "./ui/CopyField.js";
+import { SelectField } from "./ui/SelectField.js";
 
 const roleKeys: Record<InviteRole, TranslationKey> = {
   operator: "invitations.role.operator",
@@ -114,21 +115,24 @@ export function InvitationPanel() {
       </header>
 
       <div className="invitation-panel__form">
-        <label htmlFor="invitation-role">{t("invitations.roleLabel")}</label>
-        <select
+        <span className="invitation-panel__role-label">
+          {t("invitations.roleLabel")}
+        </span>
+        <SelectField
+          ariaLabel={t("invitations.roleLabel")}
           id="invitation-role"
-          value={role}
           disabled={isCreating}
-          onChange={(event) => {
-            const nextRole = event.target.value;
+          options={(Object.keys(roleKeys) as InviteRole[]).map((nextRole) => ({
+            value: nextRole,
+            label: t(roleKeys[nextRole]),
+          }))}
+          value={role}
+          onChange={(nextRole) => {
             if (nextRole === "operator" || nextRole === "viewer") {
               setRole(nextRole);
             }
           }}
-        >
-          <option value="viewer">{t("invitations.role.viewer")}</option>
-          <option value="operator">{t("invitations.role.operator")}</option>
-        </select>
+        />
         <Button disabled={isCreating} onClick={() => void handleCreate()}>
           {isCreating ? t("invitations.creating") : t("invitations.create")}
         </Button>

@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
 } from "react";
+import LiveTvIcon from "@mui/icons-material/LiveTv";
 
 import type Hls from "hls.js";
 import type { StreamPlayback } from "../shared/api.js";
@@ -314,7 +315,7 @@ export function StreamPlayer({
           />
         ) : (
           <span className="stream-player__placeholder" aria-hidden="true">
-            📺
+            <LiveTvIcon fontSize="inherit" />
           </span>
         )}
 

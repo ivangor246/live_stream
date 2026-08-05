@@ -1,6 +1,6 @@
 import type { StreamStatus } from "./stream.js";
 
-export type ReactionType = "like" | "fire" | "clap";
+export type ReactionType = "like" | "dislike" | "fire" | "clap";
 
 export type ClientWebSocketMessage =
   | {

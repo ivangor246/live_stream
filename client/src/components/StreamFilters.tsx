@@ -1,9 +1,8 @@
-import type { ChangeEvent } from "react";
-
 import type { StreamStatus } from "../shared/stream.js";
 import { useI18n, type TranslationKey } from "../i18n/I18nProvider.js";
 import { Button } from "./ui/Button.js";
 import { Card } from "./ui/Card.js";
+import { SelectField } from "./ui/SelectField.js";
 
 export type StreamFilter = "all" | StreamStatus;
 export type StreamSort = "newest" | "oldest" | "title";
@@ -53,49 +52,41 @@ export function StreamFilters({
 }: StreamFiltersProps) {
   const { t } = useI18n();
 
-  function handleFilterChange(event: ChangeEvent<HTMLSelectElement>): void {
-    if (isStreamFilter(event.target.value)) {
-      onFilterChange(event.target.value);
-    }
-  }
-
-  function handleSortChange(event: ChangeEvent<HTMLSelectElement>): void {
-    if (isStreamSort(event.target.value)) {
-      onSortChange(event.target.value);
-    }
-  }
-
   return (
     <Card as="div" className="stream-filters">
-      <label className="stream-filters__field">
+      <div className="stream-filters__field">
         <span>{t("streams.filterLabel")}</span>
-        <select
-          aria-label={t("streams.filterLabel")}
+        <SelectField
+          ariaLabel={t("streams.filterLabel")}
           value={filter}
-          onChange={handleFilterChange}
-        >
-          {(Object.keys(filterKeys) as StreamFilter[]).map((option) => (
-            <option key={option} value={option}>
-              {t(filterKeys[option])}
-            </option>
-          ))}
-        </select>
-      </label>
+          options={(Object.keys(filterKeys) as StreamFilter[]).map((option) => ({
+            value: option,
+            label: t(filterKeys[option]),
+          }))}
+          onChange={(nextFilter) => {
+            if (isStreamFilter(nextFilter)) {
+              onFilterChange(nextFilter);
+            }
+          }}
+        />
+      </div>
 
-      <label className="stream-filters__field">
+      <div className="stream-filters__field">
         <span>{t("streams.sortLabel")}</span>
-        <select
-          aria-label={t("streams.sortLabel")}
+        <SelectField
+          ariaLabel={t("streams.sortLabel")}
           value={sort}
-          onChange={handleSortChange}
-        >
-          {(Object.keys(sortKeys) as StreamSort[]).map((option) => (
-            <option key={option} value={option}>
-              {t(sortKeys[option])}
-            </option>
-          ))}
-        </select>
-      </label>
+          options={(Object.keys(sortKeys) as StreamSort[]).map((option) => ({
+            value: option,
+            label: t(sortKeys[option]),
+          }))}
+          onChange={(nextSort) => {
+            if (isStreamSort(nextSort)) {
+              onSortChange(nextSort);
+            }
+          }}
+        />
+      </div>
 
       <p className="stream-filters__summary">
         {t("streams.filterSummary", { filter: t(filterKeys[filter]) })}
