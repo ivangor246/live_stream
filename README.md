@@ -139,6 +139,7 @@ Before exposing an installation beyond a local or private network:
 
 Media connection and playback credentials are short-lived. Private viewer
 links are bearer credentials: revoke them when access is no longer needed.
+Use the [security policy](SECURITY.md) to report a vulnerability privately.
 
 ## HTTPS deployment
 
