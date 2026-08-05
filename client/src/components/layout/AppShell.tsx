@@ -1,9 +1,13 @@
 import type { ReactNode } from "react";
+import AppRegistrationIcon from "@mui/icons-material/AppRegistration";
+import LoginIcon from "@mui/icons-material/Login";
 import LiveTvIcon from "@mui/icons-material/LiveTv";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { Link } from "react-router";
 
 import { useAuth } from "../../auth/AuthProvider.js";
 import { Button } from "../ui/Button.js";
+import { ButtonLink } from "../ui/ButtonLink.js";
 import { useI18n } from "../../i18n/I18nProvider.js";
 import { LanguageSwitcher } from "./LanguageSwitcher.js";
 import { ThemeSwitcher } from "./ThemeSwitcher.js";
@@ -38,14 +42,22 @@ export function AppShell({ children }: AppShellProps) {
                   variant="ghost"
                   onClick={() => void logout()}
                 >
+                  <LogoutIcon aria-hidden="true" fontSize="small" />
                   {t("auth.logout")}
                 </Button>
               </>
             )}
-            {!user && (state === "setup" || state === "unauthenticated") && (
-              <Link className="button button--sm button--ghost" to="/auth">
+            {!user && state === "setup" && (
+              <ButtonLink size="sm" to="/auth" variant="primary">
+                <AppRegistrationIcon aria-hidden="true" fontSize="small" />
+                {t("auth.register")}
+              </ButtonLink>
+            )}
+            {!user && state === "unauthenticated" && (
+              <ButtonLink size="sm" to="/auth" variant="primary">
+                <LoginIcon aria-hidden="true" fontSize="small" />
                 {t("auth.loginSubmit")}
-              </Link>
+              </ButtonLink>
             )}
             <LanguageSwitcher locale={locale} onChange={setLocale} />
             <ThemeSwitcher />
