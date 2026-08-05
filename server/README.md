@@ -68,6 +68,7 @@ Important settings:
 
 | Setting | Purpose |
 | --- | --- |
+| `APP_VERSION` | Version reported by the OpenAPI document |
 | `DATABASE_URL` | Async PostgreSQL connection string |
 | `CORS_ORIGINS` | Comma-separated browser origins allowed by the API |
 | `MEDIA_RTMP_URL` | RTMP publishing address shown to operators |

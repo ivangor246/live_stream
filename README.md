@@ -1,6 +1,7 @@
 # Live Stream Monitor
 
 [![Continuous integration](https://github.com/ivangor246/live_stream/actions/workflows/ci.yml/badge.svg)](https://github.com/ivangor246/live_stream/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 Live Stream Monitor is a self-hosted dashboard for managing live-stream
 events on a personal server or a private network. It combines a React
@@ -123,6 +124,22 @@ The `postgres-data` and `media-recordings` Docker volumes are kept by
 `make down`. Recordings are retained for 30 days by default; configure
 `MEDIA_RECORD_RETENTION` in the Compose environment when needed.
 
+## Security and production checklist
+
+Before exposing an installation beyond a local or private network:
+
+- create a root `.env` file with strong, unique `POSTGRES_PASSWORD` and
+  `MEDIA_AUTH_SECRET` values, and keep it out of Git;
+- use the HTTPS deployment so dashboard sessions have secure cookies and
+  browser media uses the same HTTPS origin;
+- keep the PostgreSQL port and MediaMTX Control and Playback APIs on loopback
+  or an internal network; and
+- make regular backups and test the dry-run restore procedure before relying
+  on a deployment for an event.
+
+Media connection and playback credentials are short-lived. Private viewer
+links are bearer credentials: revoke them when access is no longer needed.
+
 ## HTTPS deployment
 
 Use the optional Caddy overlay when the dashboard must be available on a
@@ -193,6 +210,12 @@ Run `make help` for the complete list.
 For separate local frontend/backend development, use the instructions in the
 [frontend README](client/README.md) and [backend README](server/README.md).
 
+## Releases
+
+Release tags use the `vMAJOR.MINOR.PATCH` format. A stable release tag builds
+the frontend and backend container images and publishes them to GitHub
+Container Registry. See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
 ## Current limitations
 
 - planned start times do not trigger reminders or automatic starts;
@@ -202,3 +225,10 @@ For separate local frontend/backend development, use the instructions in the
 - backups are on demand and do not yet provide scheduling, remote storage, or
   integrity verification;
 - there is no multi-instance backend coordination.
+- HLS fallback uses `hls.js` and requires Media Source Extensions; direct
+  native HLS playback is deliberately not used because it would expose a
+  credential-bearing media URL to the page.
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
