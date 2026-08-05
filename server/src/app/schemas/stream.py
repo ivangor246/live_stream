@@ -23,6 +23,7 @@ class Stream(BaseModel):
     scheduled_at: datetime | None = Field(default=None, alias="scheduledAt")
     started_at: datetime | None = Field(default=None, alias="startedAt")
     finished_at: datetime | None = Field(default=None, alias="finishedAt")
+    can_manage: bool = Field(default=False, alias="canManage")
 
 
 class CreateStreamRequest(BaseModel):

@@ -51,13 +51,21 @@ class StreamsService:
         title: str,
         is_private: bool,
         scheduled_at: datetime | None,
+        guest_owner_token_hash: str | None = None,
     ) -> Stream:
         return await self._streams_repository.create(
             title,
             secrets.token_urlsafe(32),
             is_private,
             scheduled_at,
+            guest_owner_token_hash,
         )
+
+    async def get_guest_owned_stream_ids(self, token_hash: str | None) -> set[str]:
+        if not token_hash:
+            return set()
+
+        return await self._streams_repository.find_guest_owned_stream_ids(token_hash)
 
     async def get_stream_key(self, stream_id: str) -> str:
         stream_key = await self._streams_repository.find_stream_key(stream_id)

@@ -38,7 +38,10 @@ class StreamExportService:
         )
 
     def _to_json(self, streams: list[Stream]) -> bytes:
-        payload = [stream.model_dump(by_alias=True, mode="json") for stream in streams]
+        payload = [
+            stream.model_dump(by_alias=True, mode="json", exclude={"can_manage"})
+            for stream in streams
+        ]
         return json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
 
     def _to_csv(self, streams: list[Stream]) -> bytes:
@@ -59,7 +62,7 @@ class StreamExportService:
         writer.writeheader()
 
         for stream in streams:
-            row = stream.model_dump(by_alias=True, mode="json")
+            row = stream.model_dump(by_alias=True, mode="json", exclude={"can_manage"})
             row["isPrivate"] = str(row["isPrivate"]).lower()
             writer.writerow(row)
 

@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Request, Response, WebSocket
+from starlette.requests import HTTPConnection
 from sqlalchemy.exc import IntegrityError
 
 from app.core.errors import AppError
@@ -281,20 +282,24 @@ class AuthService:
         return user
 
     async def require_user(self, request: Request) -> AuthUser:
-        user = await self._get_user_from_token(request.cookies.get(self._cookie_name))
+        user = await self.get_optional_user(request)
         if user is None:
             raise _unauthorized_error()
 
-        return _to_auth_user(user)
+        return user
+
+    async def get_optional_user(self, connection: HTTPConnection) -> AuthUser | None:
+        user = await self._get_user_from_token(
+            connection.cookies.get(self._cookie_name),
+        )
+        return _to_auth_user(user) if user else None
 
     async def require_websocket_user(self, websocket: WebSocket) -> AuthUser:
-        user = await self._get_user_from_token(
-            websocket.cookies.get(self._cookie_name),
-        )
+        user = await self.get_optional_user(websocket)
         if user is None:
             raise _unauthorized_error()
 
-        return _to_auth_user(user)
+        return user
 
     async def _start_session(self, user_id: str, response: Response) -> None:
         session_token = secrets.token_urlsafe(32)

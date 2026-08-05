@@ -14,6 +14,7 @@ from app.schemas.websocket import (
     ViewerJoinMessage,
 )
 from app.services.streams import StreamsService
+from app.services.stream_access import StreamAccessService
 
 logger = logging.getLogger(__name__)
 client_message_adapter = TypeAdapter(ClientWebSocketMessage)
@@ -22,12 +23,18 @@ client_message_adapter = TypeAdapter(ClientWebSocketMessage)
 @dataclass
 class ConnectionContext:
     viewer_id: str | None = None
+    viewer_name: str | None = None
     stream_id: str | None = None
 
 
 class WebSocketManager:
-    def __init__(self, streams_service: StreamsService) -> None:
+    def __init__(
+        self,
+        streams_service: StreamsService,
+        stream_access_service: StreamAccessService,
+    ) -> None:
         self._streams_service = streams_service
+        self._stream_access_service = stream_access_service
         self._connections: dict[WebSocket, ConnectionContext] = {}
         self._broadcast_tasks: set[asyncio.Task[None]] = set()
         self._unsubscribe = streams_service.subscribe_to_status_updates(
@@ -103,7 +110,7 @@ class WebSocketManager:
 
         try:
             if isinstance(message, ViewerJoinMessage):
-                await self._handle_viewer_join(message, context)
+                await self._handle_viewer_join(websocket, message, context)
             elif isinstance(message, ReactionSendMessage):
                 await self._handle_reaction(message, context)
         except AppError as error:
@@ -118,11 +125,16 @@ class WebSocketManager:
 
     async def _handle_viewer_join(
         self,
+        websocket: WebSocket,
         message: ViewerJoinMessage,
         context: ConnectionContext,
     ) -> None:
         stream_id = message.payload.stream_id
         viewer_id = message.payload.viewer_id
+        viewer_name = message.payload.viewer_name
+        if not await self._stream_access_service.can_join_stream(stream_id, websocket):
+            await websocket.close(code=1008)
+            return
         connection_already_joined = (
             context.stream_id is not None or context.viewer_id is not None
         )
@@ -140,6 +152,7 @@ class WebSocketManager:
         stream = await self._streams_service.add_viewer(stream_id, viewer_id)
         context.stream_id = stream_id
         context.viewer_id = viewer_id
+        context.viewer_name = viewer_name
 
         await self.broadcast_to_stream(
             stream_id,

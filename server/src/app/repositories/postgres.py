@@ -57,12 +57,21 @@ class PostgresStreamsRepository:
             record = await session.scalar(query)
             return _to_stream(record) if record else None
 
+    async def find_guest_owned_stream_ids(self, token_hash: str) -> set[str]:
+        query = select(StreamRecord.id).where(
+            StreamRecord.guest_owner_token_hash == token_hash,
+        )
+
+        async with self._session_factory() as session:
+            return set((await session.scalars(query)).all())
+
     async def create(
         self,
         title: str,
         stream_key: str,
         is_private: bool,
         scheduled_at: datetime | None,
+        guest_owner_token_hash: str | None,
     ) -> Stream:
         record = StreamRecord(
             id=str(uuid4()),
@@ -76,6 +85,7 @@ class PostgresStreamsRepository:
             scheduled_at=scheduled_at,
             started_at=None,
             finished_at=None,
+            guest_owner_token_hash=guest_owner_token_hash,
         )
 
         async with self._session_factory() as session:

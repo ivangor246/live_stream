@@ -26,6 +26,8 @@ from app.services.media import (
 )
 from app.services.media_auth import MediaAuthService, MediaTokenService
 from app.services.streams import StreamsService
+from app.services.guest_sessions import GuestSessionService
+from app.services.stream_access import StreamAccessService
 from app.services.stream_invites import StreamViewerInvitationService
 from app.services.websocket import WebSocketManager
 
@@ -61,6 +63,16 @@ def create_app() -> FastAPI:
         invite_ttl_hours=settings.auth_invite_ttl_hours,
         secure_cookie=settings.auth_secure_cookie,
     )
+    guest_session_service = GuestSessionService(
+        cookie_name=settings.guest_cookie_name,
+        ttl_days=settings.guest_session_ttl_days,
+        secure_cookie=settings.auth_secure_cookie,
+    )
+    stream_access_service = StreamAccessService(
+        streams_service=streams_service,
+        auth_service=auth_service,
+        guest_sessions=guest_session_service,
+    )
     media_connection_service = MediaConnectionService(
         rtmp_url=settings.media_rtmp_url,
         hls_url=settings.media_hls_url,
@@ -84,7 +96,7 @@ def create_app() -> FastAPI:
         media_status_service=media_status_service,
         ttl_hours=settings.stream_invite_ttl_hours,
     )
-    websocket_manager = WebSocketManager(streams_service)
+    websocket_manager = WebSocketManager(streams_service, stream_access_service)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -126,10 +138,11 @@ def create_app() -> FastAPI:
             stream_export_service,
             auth_service,
             stream_invitation_service,
+            stream_access_service,
         ),
     )
     application.include_router(create_media_router(media_auth_service), prefix="/api")
-    register_websocket_route(application, websocket_manager, auth_service)
+    register_websocket_route(application, websocket_manager)
 
     return application
 

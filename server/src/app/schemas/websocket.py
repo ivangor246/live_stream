@@ -1,6 +1,6 @@
 from typing import Annotated, Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class StrictModel(BaseModel):
@@ -13,6 +13,12 @@ ReactionType: TypeAlias = Literal["like", "fire", "clap"]
 class ViewerJoinPayload(StrictModel):
     stream_id: str = Field(alias="streamId", min_length=1)
     viewer_id: str = Field(alias="viewerId", min_length=1)
+    viewer_name: str = Field(alias="viewerName", min_length=1, max_length=80)
+
+    @field_validator("viewer_name", mode="before")
+    @classmethod
+    def normalize_viewer_name(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
 
 
 class ReactionSendPayload(StrictModel):

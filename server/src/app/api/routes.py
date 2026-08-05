@@ -32,6 +32,7 @@ from app.services.media import (
 )
 from app.services.streams import StreamsService
 from app.services.stream_invites import StreamViewerInvitationService
+from app.services.stream_access import StreamAccessService
 from app.api.auth import create_auth_router
 
 
@@ -44,6 +45,7 @@ def create_api_router(
     stream_export_service: StreamExportService,
     auth_service: AuthService,
     stream_invitation_service: StreamViewerInvitationService,
+    stream_access_service: StreamAccessService,
 ) -> APIRouter:
     router = APIRouter(prefix="/api")
     router.include_router(create_auth_router(auth_service))
@@ -96,14 +98,15 @@ def create_api_router(
         media_connection_service,
         media_recording_service,
         media_status_service,
-        auth_service,
         stream_invitation_service,
+        stream_access_service,
     )
     _register_stream_management_routes(
         router,
         streams_service,
         auth_service,
         stream_invitation_service,
+        stream_access_service,
     )
 
     return router
@@ -115,33 +118,30 @@ def _register_stream_read_routes(
     media_connection_service: MediaConnectionService,
     media_recording_service: MediaRecordingService,
     media_status_service: MediaStatusService,
-    auth_service: AuthService,
     stream_invitation_service: StreamViewerInvitationService,
+    stream_access_service: StreamAccessService,
 ) -> None:
 
     @router.get(
         "/streams",
         response_model=list[Stream],
-        dependencies=[Depends(auth_service.require_user)],
     )
-    async def get_streams() -> list[Stream]:
-        return await streams_service.get_streams()
+    async def get_streams(request: Request) -> list[Stream]:
+        return await stream_access_service.get_streams(request)
 
     @router.get(
         "/streams/{stream_id}",
         response_model=Stream,
-        dependencies=[Depends(auth_service.require_user)],
     )
-    async def get_stream(stream_id: str) -> Stream:
-        return await streams_service.get_stream(stream_id)
+    async def get_stream(stream_id: str, request: Request) -> Stream:
+        return await stream_access_service.get_stream(stream_id, request)
 
     @router.get(
         "/streams/{stream_id}/connection",
         response_model=StreamConnection,
-        dependencies=[Depends(auth_service.require_operator)],
     )
-    async def get_stream_connection(stream_id: str) -> StreamConnection:
-        await streams_service.get_stream(stream_id)
+    async def get_stream_connection(stream_id: str, request: Request) -> StreamConnection:
+        await stream_access_service.require_stream_management(stream_id, request)
         stream_key = await streams_service.get_stream_key(stream_id)
         path_status = await media_status_service.get_path_status(stream_key)
         return media_connection_service.get_connection(
@@ -153,10 +153,9 @@ def _register_stream_read_routes(
     @router.get(
         "/streams/{stream_id}/playback",
         response_model=StreamPlayback,
-        dependencies=[Depends(auth_service.require_user)],
     )
-    async def get_stream_playback(stream_id: str) -> StreamPlayback:
-        await streams_service.get_stream(stream_id)
+    async def get_stream_playback(stream_id: str, request: Request) -> StreamPlayback:
+        await stream_access_service.require_stream_viewing(stream_id, request)
         stream_key = await streams_service.get_stream_key(stream_id)
         path_status = await media_status_service.get_path_status(stream_key)
         return media_connection_service.get_playback(
@@ -168,16 +167,14 @@ def _register_stream_read_routes(
     @router.get(
         "/streams/{stream_id}/recordings",
         response_model=list[RecordingSegment],
-        dependencies=[Depends(auth_service.require_user)],
     )
-    async def get_stream_recordings(stream_id: str) -> list[RecordingSegment]:
-        await streams_service.get_stream(stream_id)
+    async def get_stream_recordings(stream_id: str, request: Request) -> list[RecordingSegment]:
+        await stream_access_service.require_stream_viewing(stream_id, request)
         stream_key = await streams_service.get_stream_key(stream_id)
         return await media_recording_service.get_recordings(stream_key)
 
     @router.get(
         "/streams/{stream_id}/recordings/playback",
-        dependencies=[Depends(auth_service.require_user)],
     )
     async def stream_recording(
         stream_id: str,
@@ -185,7 +182,7 @@ def _register_stream_read_routes(
         start: str,
         duration: Annotated[float, Query(gt=0)],
     ) -> StreamingResponse:
-        await streams_service.get_stream(stream_id)
+        await stream_access_service.require_stream_viewing(stream_id, request)
         stream_key = await streams_service.get_stream_key(stream_id)
         return await _create_recording_response(
             media_recording_service,
@@ -255,67 +252,74 @@ def _register_stream_management_routes(
     streams_service: StreamsService,
     auth_service: AuthService,
     stream_invitation_service: StreamViewerInvitationService,
+    stream_access_service: StreamAccessService,
 ) -> None:
 
     @router.post(
         "/streams",
         response_model=Stream,
         status_code=status.HTTP_201_CREATED,
-        dependencies=[Depends(auth_service.require_operator)],
     )
-    async def create_stream(request: CreateStreamRequest) -> Stream:
-        return await streams_service.create_stream(
-            request.title,
-            request.is_private,
-            request.scheduled_at,
+    async def create_stream(
+        body: CreateStreamRequest,
+        request: Request,
+        response: Response,
+    ) -> Stream:
+        return await stream_access_service.create_stream(
+            body,
+            request,
+            response,
         )
 
     @router.get(
         "/streams/{stream_id}/viewer-invitations",
         response_model=list[StreamViewerInvitation],
-        dependencies=[Depends(auth_service.require_operator)],
     )
     async def get_stream_viewer_invitations(
         stream_id: str,
+        request: Request,
     ) -> list[StreamViewerInvitation]:
+        await stream_access_service.require_stream_management(stream_id, request)
         return await stream_invitation_service.get_invitations(stream_id)
 
     @router.post(
         "/streams/{stream_id}/viewer-invitations",
         response_model=CreatedStreamViewerInvitation,
         status_code=status.HTTP_201_CREATED,
-        dependencies=[Depends(auth_service.require_operator)],
     )
     async def create_stream_viewer_invitation(
         stream_id: str,
+        request: Request,
     ) -> CreatedStreamViewerInvitation:
+        await stream_access_service.require_stream_management(stream_id, request)
         return await stream_invitation_service.create_invitation(stream_id)
 
     @router.delete(
         "/streams/{stream_id}/viewer-invitations/{invitation_id}",
         status_code=status.HTTP_204_NO_CONTENT,
-        dependencies=[Depends(auth_service.require_operator)],
     )
     async def delete_stream_viewer_invitation(
         stream_id: str,
         invitation_id: str,
+        request: Request,
     ) -> None:
+        await stream_access_service.require_stream_management(stream_id, request)
         await stream_invitation_service.delete_invitation(stream_id, invitation_id)
 
     @router.post(
         "/streams/{stream_id}/start",
         response_model=Stream,
-        dependencies=[Depends(auth_service.require_operator)],
     )
-    async def start_stream(stream_id: str) -> Stream:
+    async def start_stream(stream_id: str, request: Request) -> Stream:
+        await stream_access_service.require_stream_management(stream_id, request)
         return await streams_service.start_stream(stream_id)
 
     @router.post(
         "/streams/{stream_id}/finish",
         response_model=Stream,
-        dependencies=[Depends(auth_service.require_operator)],
     )
-    async def finish_stream(stream_id: str) -> Stream:
+    async def finish_stream(stream_id: str, request: Request) -> Stream:
+        await stream_access_service.require_stream_management(stream_id, request)
         return await streams_service.finish_stream(stream_id)
 
 

@@ -23,6 +23,10 @@ class StreamRecord(Base):
     )
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    guest_owner_token_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        index=True,
+    )
 
 
 class UserRecord(Base):

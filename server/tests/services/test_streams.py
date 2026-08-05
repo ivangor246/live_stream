@@ -24,6 +24,7 @@ class InMemoryStreamsRepository:
         stream_key: str,
         is_private: bool,
         scheduled_at: datetime | None,
+        guest_owner_token_hash: str | None,
     ) -> Stream:
         raise NotImplementedError
 
@@ -32,6 +33,9 @@ class InMemoryStreamsRepository:
 
     async def find_by_stream_key(self, stream_key: str) -> Stream | None:
         return self.stream if stream_key == "stream-key" else None
+
+    async def find_guest_owned_stream_ids(self, token_hash: str) -> set[str]:
+        return set()
 
     async def update(self, stream: Stream) -> Stream:
         await asyncio.sleep(0)
