@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { Stream } from "../shared/stream.js";
 import type { CreateStreamRequest } from "../shared/api.js";
@@ -42,6 +42,7 @@ export function StreamsPage() {
   const [updatingStreamId, setUpdatingStreamId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StreamFilter>("all");
   const [sort, setSort] = useState<StreamSort>("newest");
+  const streamsLoadVersionRef = useRef(0);
 
   const visibleStreams = useMemo(() => {
     const filteredStreams =
@@ -64,20 +65,28 @@ export function StreamsPage() {
 
   useEffect(() => {
     const abortController = new AbortController();
+    const loadVersion = streamsLoadVersionRef.current + 1;
+    streamsLoadVersionRef.current = loadVersion;
 
     async function loadStreams(): Promise<void> {
       try {
         const loadedStreams = await getStreams(abortController.signal);
 
-        setStreams(loadedStreams);
+        if (streamsLoadVersionRef.current === loadVersion) {
+          setStreams(loadedStreams);
+          setLoadError(null);
+        }
       } catch (error: unknown) {
-        if (isAbortError(error)) {
+        if (isAbortError(error) || streamsLoadVersionRef.current !== loadVersion) {
           return;
         }
 
         setLoadError(localizeError(error, t, "errors.loadStreams"));
       } finally {
-        if (!abortController.signal.aborted) {
+        if (
+          !abortController.signal.aborted &&
+          streamsLoadVersionRef.current === loadVersion
+        ) {
           setIsLoading(false);
         }
       }
@@ -95,7 +104,13 @@ export function StreamsPage() {
   ): Promise<void> => {
     const createdStream = await createStreamRequest(request);
 
-    setStreams((currentStreams) => [createdStream, ...currentStreams]);
+    streamsLoadVersionRef.current += 1;
+    setStreams((currentStreams) => [
+      createdStream,
+      ...currentStreams.filter((stream) => stream.id !== createdStream.id),
+    ]);
+    setIsLoading(false);
+    setLoadError(null);
   }, []);
 
   const updateStreamStatus = useCallback(
