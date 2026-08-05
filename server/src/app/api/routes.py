@@ -312,7 +312,9 @@ def _register_stream_management_routes(
     )
     async def start_stream(stream_id: str, request: Request) -> Stream:
         await stream_access_service.require_stream_management(stream_id, request)
-        return await streams_service.start_stream(stream_id)
+        return (await streams_service.start_stream(stream_id)).model_copy(
+            update={"can_manage": True},
+        )
 
     @router.post(
         "/streams/{stream_id}/finish",
@@ -320,7 +322,9 @@ def _register_stream_management_routes(
     )
     async def finish_stream(stream_id: str, request: Request) -> Stream:
         await stream_access_service.require_stream_management(stream_id, request)
-        return await streams_service.finish_stream(stream_id)
+        return (await streams_service.finish_stream(stream_id)).model_copy(
+            update={"can_manage": True},
+        )
 
 
 async def _create_recording_response(
