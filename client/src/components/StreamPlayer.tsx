@@ -270,9 +270,6 @@ export function StreamPlayer({
           }
         });
         hls.attachMedia(playerVideo);
-      } else if (playerVideo.canPlayType("application/vnd.apple.mpegurl")) {
-        playerVideo.src = streamHlsUrl;
-        void playerVideo.play().catch(() => undefined);
       } else {
         setMode("unsupported");
       }

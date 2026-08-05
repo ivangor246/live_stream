@@ -3,7 +3,6 @@ import { useParams } from "react-router";
 
 import { getViewerInvitationPlayback } from "../api/streamsApi.js";
 import { StreamPlayer } from "../components/StreamPlayer.js";
-import { ViewerNameDialog } from "../components/ViewerNameDialog.js";
 import { StreamArchive } from "../components/StreamArchive.js";
 import { Card } from "../components/ui/Card.js";
 import { localizeError } from "../i18n/errorMessages.js";
@@ -17,6 +16,8 @@ const statusKeys: Record<StreamStatus, TranslationKey> = {
   finished: "status.finished",
 };
 
+const playbackRefreshInterval = 5_000;
+
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
@@ -26,7 +27,6 @@ export function ViewerStreamPage() {
   const { token } = useParams<{ token: string }>();
   const [content, setContent] = useState<ViewerInvitationPlayback | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [viewerName, setViewerName] = useState<string | null>(null);
   const isLoading = Boolean(token) && content === null && error === null;
 
   useEffect(() => {
@@ -63,6 +63,54 @@ export function ViewerStreamPage() {
     };
   }, [t, token]);
 
+  useEffect(() => {
+    if (!token || content?.stream.status !== "live") {
+      return;
+    }
+
+    const invitationToken = token;
+    const abortController = new AbortController();
+    let active = true;
+    let isRefreshing = false;
+
+    async function refreshPlayback(): Promise<void> {
+      if (isRefreshing) {
+        return;
+      }
+
+      isRefreshing = true;
+
+      try {
+        const refreshedContent = await getViewerInvitationPlayback(
+          invitationToken,
+          abortController.signal,
+        );
+
+        if (active) {
+          setContent(refreshedContent);
+          setError(null);
+        }
+      } catch (requestError: unknown) {
+        if (active && !isAbortError(requestError)) {
+          setError(localizeError(requestError, t, "errors.loadViewerStream"));
+        }
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    const intervalId = window.setInterval(
+      () => void refreshPlayback(),
+      playbackRefreshInterval,
+    );
+
+    return () => {
+      active = false;
+      abortController.abort();
+      window.clearInterval(intervalId);
+    };
+  }, [content?.stream.status, t, token]);
+
   if (isLoading) {
     return (
       <main className="page-shell auth-page">
@@ -96,11 +144,7 @@ export function ViewerStreamPage() {
         </p>
       </header>
 
-      {stream.status === "live" && !viewerName ? (
-        <ViewerNameDialog onJoin={setViewerName} />
-      ) : (
-        <StreamPlayer status={stream.status} connection={playback} />
-      )}
+      <StreamPlayer status={stream.status} connection={playback} />
 
       {stream.status === "finished" && token && (
         <StreamArchive streamId={stream.id} viewerToken={token} />

@@ -473,6 +473,7 @@ h2 {
 }
 
 .app-date-time-picker__paper.MuiPaper-root {
+  max-width: calc(100vw - 2rem);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   color: var(--color-text);
@@ -1460,6 +1461,11 @@ dd {
 
   .stream-card__stats div:last-child {
     grid-column: auto;
+  }
+
+  .stream-card__stats div:nth-child(3),
+  .stream-card__stats div:nth-child(4) {
+    grid-column: 1 / -1;
   }
 
   .stream-player__screen {

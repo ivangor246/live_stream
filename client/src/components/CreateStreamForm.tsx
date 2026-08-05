@@ -1,5 +1,6 @@
 import { type SubmitEvent, useState } from "react";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -48,6 +49,7 @@ function toScheduledAt(value: Dayjs | null): string | undefined | null {
 
 export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
   const { locale, t } = useI18n();
+  const usesCompactDateLabel = useMediaQuery("(max-width: 640px)");
   const pickerLocaleText: Partial<PickersLocaleText> = {
     cancelButtonLabel: t("calendar.cancel"),
     clearButtonLabel: t("calendar.clear"),
@@ -160,12 +162,20 @@ export function CreateStreamForm({ onCreate }: CreateStreamFormProps) {
           <DateTimePicker
             ampm={false}
             className="app-date-time-picker"
+            desktopModeMediaQuery="@media (min-width: 641px)"
             disabled={formState.isSubmitting}
             format={locale === "ru" ? "DD.MM.YYYY HH:mm" : "MM/DD/YYYY HH:mm"}
-            label={t("streams.plannedStartLabel")}
+            label={t(
+              usesCompactDateLabel
+                ? "streams.plannedStartLabelCompact"
+                : "streams.plannedStartLabel",
+            )}
             slots={{ openPickerIcon: CalendarMonthIcon }}
             slotProps={{
               desktopPaper: {
+                className: "app-date-time-picker__paper",
+              },
+              mobilePaper: {
                 className: "app-date-time-picker__paper",
               },
               popper: {
