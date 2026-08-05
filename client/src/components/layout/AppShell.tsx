@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { useAuth } from "../../auth/AuthProvider.js";
 import { getSystemStatus } from "../../api/streamsApi.js";

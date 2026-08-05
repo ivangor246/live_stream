@@ -1,5 +1,5 @@
 import { type SubmitEvent, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 
 import { acceptInvitation, getInvitation } from "../api/authApi.js";
 import { useAuth } from "../auth/AuthProvider.js";
