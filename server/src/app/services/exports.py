@@ -64,6 +64,13 @@ class StreamExportService:
         for stream in streams:
             row = stream.model_dump(by_alias=True, mode="json", exclude={"can_manage"})
             row["isPrivate"] = str(row["isPrivate"]).lower()
-            writer.writerow(row)
+            writer.writerow({key: _escape_csv_value(value) for key, value in row.items()})
 
         return ("\ufeff" + output.getvalue()).encode("utf-8")
+
+
+def _escape_csv_value(value: object) -> object:
+    if isinstance(value, str) and value.startswith(("=", "+", "-", "@")):
+        return f"'{value}"
+
+    return value

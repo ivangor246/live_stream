@@ -140,10 +140,15 @@ def _register_stream_read_routes(
         "/streams/{stream_id}/connection",
         response_model=StreamConnection,
     )
-    async def get_stream_connection(stream_id: str, request: Request) -> StreamConnection:
+    async def get_stream_connection(
+        stream_id: str,
+        request: Request,
+        response: Response,
+    ) -> StreamConnection:
         await stream_access_service.require_stream_management(stream_id, request)
         stream_key = await streams_service.get_stream_key(stream_id)
         path_status = await media_status_service.get_path_status(stream_key)
+        _set_sensitive_response_headers(response)
         return media_connection_service.get_connection(
             stream_id,
             stream_key,
@@ -154,10 +159,15 @@ def _register_stream_read_routes(
         "/streams/{stream_id}/playback",
         response_model=StreamPlayback,
     )
-    async def get_stream_playback(stream_id: str, request: Request) -> StreamPlayback:
+    async def get_stream_playback(
+        stream_id: str,
+        request: Request,
+        response: Response,
+    ) -> StreamPlayback:
         await stream_access_service.require_stream_viewing(stream_id, request)
         stream_key = await streams_service.get_stream_key(stream_id)
         path_status = await media_status_service.get_path_status(stream_key)
+        _set_sensitive_response_headers(response)
         return media_connection_service.get_playback(
             stream_id,
             stream_key,
@@ -196,7 +206,8 @@ def _register_stream_read_routes(
         "/viewer-invitations/{token}",
         response_model=ViewerInvitationPlayback,
     )
-    async def get_viewer_invitation_playback(token: str) -> ViewerInvitationPlayback:
+    async def get_viewer_invitation_playback(response: Response, token: str) -> ViewerInvitationPlayback:
+        _set_sensitive_response_headers(response)
         return await stream_invitation_service.get_playback(token)
 
     @router.get(
@@ -347,3 +358,8 @@ async def _create_recording_response(
         headers=recording.headers,
         background=BackgroundTask(recording.close),
     )
+
+
+def _set_sensitive_response_headers(response: Response) -> None:
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
