@@ -230,13 +230,32 @@ h2 {
 }
 
 .language-switcher select {
+  appearance: none;
   min-height: 2.25rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 0.35rem 0.6rem;
+  padding: 0.35rem 2rem 0.35rem 0.6rem;
   color: var(--color-text);
   background: var(--color-surface-elevated);
   cursor: pointer;
+}
+
+.language-switcher {
+  position: relative;
+  display: inline-flex;
+}
+
+.language-switcher::after {
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid var(--color-text-soft);
+  border-bottom: 1.5px solid var(--color-text-soft);
+  content: "";
+  pointer-events: none;
+  transform: translateY(-65%) rotate(45deg);
 }
 
 .auth-account {
