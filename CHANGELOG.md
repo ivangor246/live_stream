@@ -5,7 +5,7 @@ All notable changes to Live Stream Monitor are documented in this file.
 The project follows [Semantic Versioning](https://semver.org/) and uses
 release tags in the `vMAJOR.MINOR.PATCH` format.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-08-05
 
 ### Added
 
