@@ -54,9 +54,7 @@ export function AppShell({ children }: AppShellProps) {
       <header className="app-header">
         <div className="page-container app-header__inner">
           <Link className="brand" to="/">
-            <span aria-hidden="true" className="brand__mark">
-              ◉
-            </span>
+            <span aria-hidden="true" className="brand__mark" />
             <span>{t("app.name")}</span>
           </Link>
 
