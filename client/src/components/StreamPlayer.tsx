@@ -241,7 +241,7 @@ export function StreamPlayer({
     playerVideo.srcObject = null;
 
     async function startHls(): Promise<void> {
-      const hlsModule = await import("hls.js");
+      const hlsModule = await import("hls.js/light");
 
       if (!active) {
         return;
