@@ -39,13 +39,7 @@ function AuthRouteContent() {
     return <AuthPage mode="login" />;
   }
 
-  return (
-    <Routes>
-      <Route path="/" element={<StreamsPage />} />
-      <Route path="/streams/:streamId" element={<StreamPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+  return <Navigate to="/" replace />;
 }
 
 export default function App() {
@@ -55,7 +49,10 @@ export default function App() {
         <Route path="/invite/:token" element={<InvitePage />} />
         <Route path="/watch/:token" element={<ViewerStreamPage />} />
         <Route path="/status" element={<StatusPage />} />
-        <Route path="*" element={<AuthRouteContent />} />
+        <Route path="/auth" element={<AuthRouteContent />} />
+        <Route path="/" element={<StreamsPage />} />
+        <Route path="/streams/:streamId" element={<StreamPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
   );

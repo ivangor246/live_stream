@@ -25,11 +25,10 @@ import { StreamArchive } from "../components/StreamArchive.js";
 import { StreamPlayer } from "../components/StreamPlayer.js";
 import { StreamStatistics } from "../components/StreamStatistics.js";
 import { ViewerAccessPanel } from "../components/ViewerAccessPanel.js";
+import { ViewerNameDialog } from "../components/ViewerNameDialog.js";
 import { Button } from "../components/ui/Button.js";
 import { ButtonLink } from "../components/ui/ButtonLink.js";
 import { useStreamSocket } from "../hooks/useStreamSocket.js";
-import { useAuth } from "../auth/AuthProvider.js";
-import { canManageStreams } from "../shared/auth.js";
 
 const mediaStatusRefreshInterval = 5_000;
 
@@ -68,6 +67,7 @@ function StreamContent({
   onFinish,
 }: StreamContentProps) {
   const { formatDate, t } = useI18n();
+  const [viewerName, setViewerName] = useState<string | null>(null);
   const {
     connectionStatus,
     viewerCount,
@@ -81,6 +81,7 @@ function StreamContent({
     stream.viewerCount,
     stream.reactionCount,
     stream.status,
+    viewerName,
   );
 
   const reactionsDisabled =
@@ -103,7 +104,11 @@ function StreamContent({
         )}
       </header>
 
-      <StreamPlayer status={streamStatus} connection={playback} />
+      {streamStatus === "live" && !viewerName ? (
+        <ViewerNameDialog onJoin={setViewerName} />
+      ) : (
+        <StreamPlayer status={streamStatus} connection={playback} />
+      )}
 
       {streamStatus === "finished" && <StreamArchive streamId={stream.id} />}
 
@@ -155,11 +160,9 @@ function StreamContent({
 
 export function StreamPage() {
   const { t } = useI18n();
-  const { user } = useAuth();
   const { streamId } = useParams<{
     streamId: string;
   }>();
-  const canManage = canManageStreams(user?.role);
 
   const [stream, setStream] = useState<Stream | null>(null);
   const [playback, setPlayback] = useState<StreamPlayback | null>(null);
@@ -173,6 +176,7 @@ export function StreamPage() {
   const [actionError, setActionError] =
     useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const canManage = stream?.canManage ?? false;
 
   useEffect(() => {
     if (!streamId) {
@@ -199,7 +203,7 @@ export function StreamPage() {
         setStream(loadedStream);
 
         try {
-          if (canManage) {
+          if (loadedStream.canManage) {
             const streamConnection = await getStreamConnection(
               currentStreamId,
               abortController.signal,

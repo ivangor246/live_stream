@@ -105,17 +105,20 @@ export function useStreamSocket(
   initialViewerCount: number,
   initialReactionCount: number,
   initialStreamStatus: StreamStatus,
+  viewerName: string | null,
 ): UseStreamSocketResult {
   const { t } = useI18n();
   const viewerId = useMemo(() => crypto.randomUUID(), []);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const reconnectAttemptRef = useRef(0);
-  const shouldReconnectRef = useRef(initialStreamStatus === "live");
+  const shouldReconnectRef = useRef(
+    initialStreamStatus === "live" && Boolean(viewerName),
+  );
 
   const [connectionStatus, setConnectionStatus] =
     useState<SocketConnectionStatus>(
-      initialStreamStatus === "live" ? "connecting" : "closed",
+      initialStreamStatus === "live" && viewerName ? "connecting" : "closed",
     );
   const [viewerCount, setViewerCount] = useState(
     initialViewerCount,
@@ -130,10 +133,11 @@ export function useStreamSocket(
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialStreamStatus !== "live") {
+    if (initialStreamStatus !== "live" || !viewerName) {
       return;
     }
 
+    const viewerNameForConnection = viewerName;
     let isActive = true;
     shouldReconnectRef.current = true;
     reconnectAttemptRef.current = 0;
@@ -196,6 +200,7 @@ export function useStreamSocket(
           payload: {
             streamId,
             viewerId,
+            viewerName: viewerNameForConnection,
           },
         };
 
@@ -293,7 +298,7 @@ export function useStreamSocket(
       socketRef.current = null;
       socket?.close();
     };
-  }, [initialStreamStatus, streamId, viewerId]);
+  }, [initialStreamStatus, streamId, viewerId, viewerName]);
 
   const sendReaction = useCallback(
     (reaction: ReactionType): void => {

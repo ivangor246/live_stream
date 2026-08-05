@@ -79,6 +79,8 @@ Important settings:
 | `MEDIA_AUTH_TOKEN_TTL_SECONDS` | Lifetime of a media credential |
 | `AUTH_SECURE_COOKIE` | Set to `true` when the dashboard uses HTTPS |
 | `AUTH_SESSION_TTL_DAYS` | Dashboard session lifetime |
+| `GUEST_COOKIE_NAME` | HttpOnly cookie used to identify a guest stream owner |
+| `GUEST_SESSION_TTL_DAYS` | Guest stream owner cookie lifetime |
 | `AUTH_INVITE_TTL_HOURS` | Account invitation lifetime |
 | `STREAM_INVITE_TTL_HOURS` | Private viewer-link lifetime |
 | `LOG_LEVEL` | Minimum JSON log level |
@@ -125,14 +127,23 @@ stack can be started from the repository root with `make up`.
 
 The setup endpoint is available only while PostgreSQL contains no users.
 Sessions use an HttpOnly cookie. Passwords, session tokens, account invitation
-tokens, and private viewer-link tokens are stored only as hashes. Source
-tokens are returned only in the response that creates them and are not logged.
+tokens, and private viewer-link tokens are stored only as hashes. A guest who
+creates a stream receives a separate HttpOnly owner cookie; only its hash is
+stored with the stream. Source tokens are returned only in the response that
+creates them and are not logged.
 
 | Role | Access |
 | --- | --- |
 | Administrator | Manage streams, invitations, accounts, roles, and exports |
 | Operator | Manage streams, obtain RTMP connection details, create viewer links, and export metadata |
 | Viewer | List streams and receive safe playback details; cannot obtain RTMP credentials or change stream state |
+
+Guests can open the dashboard without an account. They can create streams and
+manage only the streams created in the same browser, including RTMP connection
+details and private viewer links. Administrators and operators retain access to
+all streams. Public playback and recordings do not need a session; private
+streams still require an authenticated account, the owner cookie, or a private
+viewer link.
 
 Administrators cannot disable or lower their own account. Disabling an account
 revokes its sessions. Deletion is allowed only for another already-disabled
@@ -175,19 +186,19 @@ Interactive OpenAPI documentation is available at
 
 | Method | Path | Access | Purpose |
 | --- | --- | --- | --- |
-| `GET` | `/api/streams` | Any session | List streams |
-| `GET` | `/api/streams/{streamId}` | Any session | Get one stream |
+| `GET` | `/api/streams` | Public | List streams |
+| `GET` | `/api/streams/{streamId}` | Public | Get one stream |
 | `GET` | `/api/streams/export?format=csv\|json` | Administrator or operator | Download safe stream metadata |
-| `GET` | `/api/streams/{streamId}/playback` | Any session | Get safe HLS/WebRTC details |
-| `GET` | `/api/streams/{streamId}/recordings` | Any session | List protected recording segments |
-| `GET` | `/api/streams/{streamId}/recordings/playback` | Any session | Stream one protected recording segment |
-| `GET` | `/api/streams/{streamId}/connection` | Administrator or operator | Get RTMP connection details |
-| `POST` | `/api/streams` | Administrator or operator | Create a stream |
-| `POST` | `/api/streams/{streamId}/start` | Administrator or operator | Create the MediaMTX path and start a stream |
-| `POST` | `/api/streams/{streamId}/finish` | Administrator or operator | Finish a live stream |
-| `GET` | `/api/streams/{streamId}/viewer-invitations` | Administrator or operator | List private viewer links |
-| `POST` | `/api/streams/{streamId}/viewer-invitations` | Administrator or operator | Create a private viewer link |
-| `DELETE` | `/api/streams/{streamId}/viewer-invitations/{invitationId}` | Administrator or operator | Revoke a private viewer link |
+| `GET` | `/api/streams/{streamId}/playback` | Public stream, account, or guest owner | Get safe HLS/WebRTC details |
+| `GET` | `/api/streams/{streamId}/recordings` | Public stream, account, or guest owner | List protected recording segments |
+| `GET` | `/api/streams/{streamId}/recordings/playback` | Public stream, account, or guest owner | Stream one protected recording segment |
+| `GET` | `/api/streams/{streamId}/connection` | Administrator, operator, or guest owner | Get RTMP connection details |
+| `POST` | `/api/streams` | Public | Create a stream and guest owner cookie |
+| `POST` | `/api/streams/{streamId}/start` | Administrator, operator, or guest owner | Create the MediaMTX path and start a stream |
+| `POST` | `/api/streams/{streamId}/finish` | Administrator, operator, or guest owner | Finish a live stream |
+| `GET` | `/api/streams/{streamId}/viewer-invitations` | Administrator, operator, or guest owner | List private viewer links |
+| `POST` | `/api/streams/{streamId}/viewer-invitations` | Administrator, operator, or guest owner | Create a private viewer link |
+| `DELETE` | `/api/streams/{streamId}/viewer-invitations/{invitationId}` | Administrator, operator, or guest owner | Revoke a private viewer link |
 | `GET` | `/api/viewer-invitations/{token}` | Private viewer link | Get linked stream playback details |
 | `GET` | `/api/viewer-invitations/{token}/recordings` | Private viewer link | List linked stream recordings |
 | `GET` | `/api/viewer-invitations/{token}/recordings/playback` | Private viewer link | Play a linked recording segment |
@@ -211,7 +222,8 @@ viewer-link tokens, invitations, or sessions.
 
 ## WebSocket API
 
-Connect with the authenticated dashboard session:
+Connect without a dashboard session for public streams. A private stream still
+requires an authenticated account or the matching guest owner cookie:
 
 ```text
 ws://localhost:3000/ws
@@ -224,7 +236,8 @@ The dashboard joins a stream with:
   "type": "viewer:join",
   "payload": {
     "streamId": "...",
-    "viewerId": "..."
+    "viewerId": "...",
+    "viewerName": "Guest viewer"
   }
 }
 ```
@@ -267,8 +280,9 @@ The live-stream flow is:
 
 MediaMTX removes expired segments according to the global
 `MEDIA_RECORD_RETENTION` duration. Archive access goes through the backend,
-which checks the dashboard session or the matching private viewer link before
-proxying a recording. Anonymous direct archive access is not enabled.
+which checks public visibility, a dashboard session, the matching guest owner
+cookie, or a private viewer link before proxying a recording. Anonymous direct
+archive access is not enabled.
 
 ## Logs, request IDs, and metrics
 

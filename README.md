@@ -14,6 +14,9 @@ deployment.
 - publish through RTMP and watch through WebRTC with automatic HLS fallback;
 - show MediaMTX source status, detected source protocol, and viewer counts;
 - send live viewer-count, reaction, and stream-status updates over WebSocket;
+- let guests open the dashboard and create, start, finish, and publish their
+  own streams without a sign-in;
+- ask each viewer for a display name before connecting to a live stream;
 - keep stream metadata in PostgreSQL and apply Alembic migrations on startup;
 - use administrator, operator, and viewer roles with HttpOnly cookie sessions;
 - create one-time account invitations and reversible account deactivation;
@@ -29,8 +32,9 @@ deployment.
   reusable frontend components.
 
 The planned start time is informational and stored in UTC. It never starts a
-stream or a media path automatically. A stream is started explicitly by an
-administrator or operator, then MediaMTX accepts the authorized publisher.
+stream or a media path automatically. A stream is started explicitly by its
+guest creator, an administrator, or an operator, then MediaMTX accepts the
+authorized publisher.
 After the stream is finished, its recording remains available through the
 protected archive until the configured retention period expires.
 
@@ -68,8 +72,8 @@ make up
 
 This starts the frontend, backend, PostgreSQL, and MediaMTX containers in the
 background. The backend applies pending migrations before serving requests.
-Open the dashboard at <http://localhost:8080>. On the first visit, create the
-local administrator account.
+Open the dashboard at <http://localhost:8080>; it is ready to use immediately.
+Creating an administrator account is optional and available through **Sign in**.
 
 Useful commands:
 

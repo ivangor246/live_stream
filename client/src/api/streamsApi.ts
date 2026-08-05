@@ -71,7 +71,8 @@ function isStream(value: unknown): value is Stream {
     typeof value.createdAt === "string" &&
     isNullableString(value.scheduledAt) &&
     isNullableString(value.startedAt) &&
-    isNullableString(value.finishedAt)
+    isNullableString(value.finishedAt) &&
+    typeof value.canManage === "boolean"
   );
 }
 

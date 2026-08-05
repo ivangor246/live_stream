@@ -11,6 +11,7 @@ export interface Stream {
   scheduledAt: string | null;
   startedAt: string | null;
   finishedAt: string | null;
+  canManage: boolean;
 }
 
 export interface StreamViewerInvitation {

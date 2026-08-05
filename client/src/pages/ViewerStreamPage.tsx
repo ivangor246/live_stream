@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 
 import { getViewerInvitationPlayback } from "../api/streamsApi.js";
 import { StreamPlayer } from "../components/StreamPlayer.js";
+import { ViewerNameDialog } from "../components/ViewerNameDialog.js";
 import { StreamArchive } from "../components/StreamArchive.js";
 import { Card } from "../components/ui/Card.js";
 import { localizeError } from "../i18n/errorMessages.js";
@@ -25,6 +26,7 @@ export function ViewerStreamPage() {
   const { token } = useParams<{ token: string }>();
   const [content, setContent] = useState<ViewerInvitationPlayback | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewerName, setViewerName] = useState<string | null>(null);
   const isLoading = Boolean(token) && content === null && error === null;
 
   useEffect(() => {
@@ -94,7 +96,11 @@ export function ViewerStreamPage() {
         </p>
       </header>
 
-      <StreamPlayer status={stream.status} connection={playback} />
+      {stream.status === "live" && !viewerName ? (
+        <ViewerNameDialog onJoin={setViewerName} />
+      ) : (
+        <StreamPlayer status={stream.status} connection={playback} />
+      )}
 
       {stream.status === "finished" && token && (
         <StreamArchive streamId={stream.id} viewerToken={token} />

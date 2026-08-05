@@ -15,7 +15,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const { locale, setLocale, t } = useI18n();
-  const { user, logout } = useAuth();
+  const { state, user, logout } = useAuth();
   const [systemStatus, setSystemStatus] =
     useState<SystemStatusState>("checking");
 
@@ -75,6 +75,11 @@ export function AppShell({ children }: AppShellProps) {
                   {t("auth.logout")}
                 </Button>
               </>
+            )}
+            {!user && (state === "setup" || state === "unauthenticated") && (
+              <Link className="button button--sm button--ghost" to="/auth">
+                {t("auth.loginSubmit")}
+              </Link>
             )}
             <LanguageSwitcher locale={locale} onChange={setLocale} />
             <ThemeSwitcher />

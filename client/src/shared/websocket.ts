@@ -8,6 +8,7 @@ export type ClientWebSocketMessage =
       payload: {
         streamId: string;
         viewerId: string;
+        viewerName: string;
       };
     }
   | {

@@ -34,7 +34,7 @@ function isAbortError(error: unknown): boolean {
 export function StreamsPage() {
   const { locale, t } = useI18n();
   const { user } = useAuth();
-  const canManage = canManageStreams(user?.role);
+  const canManageAllStreams = canManageStreams(user?.role);
   const [streams, setStreams] = useState<Stream[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -148,7 +148,7 @@ export function StreamsPage() {
         <p>{t("app.description")}</p>
       </header>
 
-      {canManage && <CreateStreamForm onCreate={handleCreate} />}
+      <CreateStreamForm onCreate={handleCreate} />
       {user && <ChangePasswordPanel />}
       {user?.role === "admin" && <InvitationPanel />}
       {user?.role === "admin" && <AccountPanel currentUserId={user.id} />}
@@ -166,7 +166,7 @@ export function StreamsPage() {
               </span>
             )}
           </div>
-          {canManage && <StreamExportActions />}
+          {canManageAllStreams && <StreamExportActions />}
         </header>
 
         {isLoading && <p>{t("streams.loading")}</p>}
@@ -219,7 +219,7 @@ export function StreamsPage() {
                   <StreamCard
                     key={stream.id}
                     stream={stream}
-                    canManage={canManage}
+                    canManage={stream.canManage}
                     isUpdating={updatingStreamId === stream.id}
                     onStart={handleStart}
                     onFinish={handleFinish}
