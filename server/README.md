@@ -103,6 +103,10 @@ make dev-backend
 `make dev-backend` applies all pending migrations and starts Uvicorn with
 reload at <http://localhost:3000>. Run `make dev-frontend` in another terminal
 for the Vite dashboard. The frontend proxies `/api` and `/ws` to this server.
+Alternatively, run `make dev` from the repository root to start PostgreSQL,
+MediaMTX, FastAPI, and Vite together with hot reload. Press `Ctrl-C` to stop
+the host processes and local development containers; use `make dev-down` if
+the command was interrupted.
 
 The equivalent direct commands are:
 

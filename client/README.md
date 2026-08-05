@@ -88,8 +88,9 @@ npm run preview
 ```
 
 The equivalent root-level commands are `make install-frontend`,
-`make dev-frontend`, `make lint`, and `make build`. To run the complete Docker
-stack with one command, use `make up` from the repository root.
+`make dev-frontend`, `make lint`, and `make build`. To run the complete
+hot-reload development stack, use `make dev` from the repository root. To run
+the containerized stack, use `make up`.
 
 ## Localization and theme
 

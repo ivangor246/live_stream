@@ -4,7 +4,7 @@ POETRY ?= poetry
 HTTPS_COMPOSE = docker compose --env-file deploy/.env.https -f docker-compose.yml -f docker-compose.https.yml
 
 .PHONY: help install install-frontend install-backend db-up db-down db-migrate media-up media-down backup \
-        dev-frontend dev-backend lint build backend-check backend-test docker-build docker-up \
+        dev dev-up dev-down dev-frontend dev-backend lint build backend-check backend-test docker-build docker-up \
         docker-down docker-logs up down start stop restart logs https-up https-down restore
 
 help:
@@ -16,6 +16,9 @@ help:
 		'make restart          Recreate the complete Docker stack' \
 		'make logs             Follow logs from all Docker services' \
 		'make install          Install frontend and backend dependencies' \
+		'make dev              Start the complete host-based development stack' \
+		'make dev-up           Alias for make dev' \
+		'make dev-down         Stop local development PostgreSQL and MediaMTX' \
 		'make dev-frontend     Start the Vite development server' \
 		'make db-up            Start the local PostgreSQL service' \
 		'make db-down          Stop the local PostgreSQL service' \
@@ -52,6 +55,15 @@ restart:
 
 logs:
 	docker compose logs -f
+
+dev: dev-up
+
+dev-up:
+	POETRY="$(POETRY)" sh scripts/dev.sh
+
+dev-down:
+	$(MAKE) db-down
+	$(MAKE) media-down
 
 install: install-frontend install-backend
 

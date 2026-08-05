@@ -79,6 +79,27 @@ make down       # stop and remove the containers, keep named volumes
 make restart    # recreate the complete local stack
 ```
 
+## Development mode
+
+For hot reload without building frontend and backend images, install the
+dependencies and start the host-based development stack:
+
+```bash
+cp server/.env.example server/.env
+make install
+make dev
+```
+
+This command starts PostgreSQL and MediaMTX in Docker, then runs FastAPI with
+reload at <http://localhost:3000> and Vite at <http://localhost:5173>. Both
+application logs stay in the current terminal. Press `Ctrl-C` to stop the
+development processes and their local PostgreSQL and MediaMTX containers.
+If the command was interrupted, use `make dev-down` to stop the remaining
+development containers.
+
+Do not run `make dev` and `make up` at the same time: both modes use the same
+backend, database, and media ports.
+
 Default local endpoints:
 
 - dashboard: <http://localhost:8080>;
@@ -151,6 +172,8 @@ Run `make help` for the complete list.
 | `make restart` | Recreate the complete Docker stack |
 | `make logs` | Follow logs from all Docker services |
 | `make install` | Install frontend npm packages and backend Poetry dependencies |
+| `make dev` / `make dev-up` | Start Vite, FastAPI, PostgreSQL, and MediaMTX with hot reload |
+| `make dev-down` | Stop local development PostgreSQL and MediaMTX |
 | `make dev-frontend` | Start the Vite development server |
 | `make dev-backend` | Apply migrations and start the FastAPI development server |
 | `make db-up` / `make db-down` | Start or stop local PostgreSQL |
